@@ -523,9 +523,7 @@ function createShootingStar() {
     setTimeout(() => star.remove(), 2000);
 }
 
-// Spawn shooting stars periodically
-setInterval(createShootingStar, 2000);
-setTimeout(() => createShootingStar(), 500); // Initial star
+// Shooting stars disabled
 
 // ===== MAGIC SPARKLE MOUSE TRAIL =====
 let lastSparkleTime = 0;
