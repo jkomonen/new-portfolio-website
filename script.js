@@ -1294,15 +1294,12 @@ termInput.addEventListener('keydown', (e) => {
     }
 });
 
-// Hint badge
-setTimeout(() => {
-    const hint = document.createElement('div');
-    hint.className = 'terminal-hint';
-    hint.innerHTML = '` &nbsp;Open Terminal';
-    document.body.appendChild(hint);
-    setTimeout(() => hint.classList.add('fade'), 3000);
-    setTimeout(() => hint.remove(), 3700);
-}, 4000);
+// Permanent terminal toggle button (bottom right)
+const termHint = document.createElement('div');
+termHint.className = 'terminal-hint';
+termHint.innerHTML = '<span class="term-hint-key">`</span> Terminal';
+termHint.addEventListener('click', () => termOpen ? closeTerminal() : openTerminal());
+document.body.appendChild(termHint);
 
 // ===== PARTICLE BLACK HOLE (click + hold) =====
 let bhHoldTimer = null;
@@ -1362,10 +1359,11 @@ document.addEventListener('mouseup', () => {
     blackHole = null;
 });
 
-// ===== WARP SPEED (shake mouse fast) =====
+// ===== WARP SPEED (shake mouse fast for 2 seconds) =====
 let warpCooldown = false;
 let warpLastX = 0, warpLastY = 0, warpLastT = 0;
 let warpSpeeds = [];
+let warpShakeStart = null;
 
 document.addEventListener('mousemove', (e) => {
     const now = performance.now();
@@ -1378,7 +1376,15 @@ document.addEventListener('mousemove', (e) => {
         if (warpSpeeds.length > 6) warpSpeeds.shift();
         if (!warpCooldown && warpSpeeds.length >= 5) {
             const avg = warpSpeeds.reduce((a, b) => a + b, 0) / warpSpeeds.length;
-            if (avg > 3.5) triggerWarp();
+            if (avg > 3.5) {
+                if (!warpShakeStart) warpShakeStart = now;
+                else if (now - warpShakeStart >= 2000) {
+                    warpShakeStart = null;
+                    triggerWarp();
+                }
+            } else {
+                warpShakeStart = null;
+            }
         }
     }
     warpLastX = e.clientX;
