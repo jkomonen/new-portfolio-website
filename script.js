@@ -434,6 +434,7 @@ const confettiShapes = ['square', 'circle', 'triangle'];
 document.addEventListener('click', (e) => {
     // Don't trigger on form inputs
     if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (typeof suppressNextClick !== 'undefined' && suppressNextClick) { suppressNextClick = false; return; }
 
     createConfettiExplosion(e.clientX, e.clientY);
 });
@@ -716,6 +717,16 @@ class Particle {
                 this.x += (dx / distance) * force;
                 this.y += (dy / distance) * force;
             }
+        }
+
+        // BLACK HOLE ATTRACTION
+        if (typeof blackHole !== 'undefined' && blackHole) {
+            let bhDx = blackHole.x - this.x;
+            let bhDy = blackHole.y - this.y;
+            let bhDist = Math.sqrt(bhDx * bhDx + bhDy * bhDy) || 1;
+            let bhForce = Math.min(7000 / (bhDist * bhDist), 14);
+            this.x += (bhDx / bhDist) * bhForce;
+            this.y += (bhDy / bhDist) * bhForce;
         }
 
         // Slowly drift back to base position
@@ -1132,4 +1143,297 @@ if ('requestIdleCallback' in window) {
     requestIdleCallback(preloadImages);
 } else {
     setTimeout(preloadImages, 1000);
+}
+
+// ===== HIDDEN TERMINAL (press `) =====
+const terminalEl = document.createElement('div');
+terminalEl.className = 'terminal-overlay';
+terminalEl.innerHTML = `
+    <div class="terminal-header">
+        <div class="terminal-dots"><span></span><span></span><span></span></div>
+        <span class="terminal-title">jkomonen@portfolio:~</span>
+        <button class="terminal-close-btn">✕</button>
+    </div>
+    <div class="terminal-body" id="terminal-body">
+        <div class="terminal-line">Welcome to Joshua's terminal. Type <span class="term-accent">help</span> for available commands.</div>
+    </div>
+    <div class="terminal-input-row">
+        <span class="terminal-prompt-label">jkomonen@portfolio:~ $&nbsp;</span>
+        <input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="type a command...">
+    </div>
+`;
+document.body.appendChild(terminalEl);
+
+const termBody = document.getElementById('terminal-body');
+const termInput = document.getElementById('terminal-input');
+let termOpen = false;
+let termHistory = [];
+let termHistoryIdx = -1;
+
+function openTerminal() {
+    terminalEl.classList.add('open');
+    termOpen = true;
+    setTimeout(() => termInput.focus(), 420);
+}
+
+function closeTerminal() {
+    terminalEl.classList.remove('open');
+    termOpen = false;
+}
+
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' && e.target !== termInput) return;
+    if (e.target.tagName === 'TEXTAREA') return;
+    if (e.key === '`') {
+        e.preventDefault();
+        termOpen ? closeTerminal() : openTerminal();
+    }
+    if (e.key === 'Escape' && termOpen) closeTerminal();
+});
+
+terminalEl.querySelector('.terminal-close-btn').addEventListener('click', closeTerminal);
+
+function termPrint(html, cls) {
+    const line = document.createElement('div');
+    line.className = 'terminal-line' + (cls ? ' ' + cls : '');
+    line.innerHTML = html;
+    termBody.appendChild(line);
+    termBody.scrollTop = termBody.scrollHeight;
+}
+
+const termCommands = {
+    help() {
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Toggle matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal`, 'term-pre');
+    },
+    whoami() {
+        termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
+    },
+    skills() {
+        termPrint(`Technical Skills:\n  <span class="term-accent">Frontend</span>  React · TypeScript · Next.js · Vue.js · Tailwind\n  <span class="term-accent">Backend</span>   Node.js · Python · Java · Express · FastAPI\n  <span class="term-accent">Database</span>  PostgreSQL · MongoDB · Redis · MySQL\n  <span class="term-accent">DevOps</span>    Docker · AWS · Kubernetes · CI/CD · Git`, 'term-pre');
+    },
+    projects() {
+        termPrint(`Featured Projects:\n  <span class="term-purple">CloudSync</span>   Real-time collaboration platform\n  <span class="term-purple">DevMetrics</span>  Dev team analytics dashboard\n  <span class="term-purple">SecureAuth</span>  Enterprise auth microservice\n  <span class="term-purple">StreamFlow</span>  High-volume event streaming`, 'term-pre');
+        termPrint(`→ <a href="#projects" class="term-link" onclick="closeTerminal()">View all projects ↗</a>`);
+    },
+    contact() {
+        termPrint(`Contact:\n  Email    <span class="term-accent">joshua.komonen@email.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/jkomonen</span>`, 'term-pre');
+        termPrint(`→ <a href="#contact" class="term-link" onclick="closeTerminal()">Send a message ↗</a>`);
+    },
+    hack() {
+        termPrint('Initiating hack sequence...', 'term-purple');
+        const bar = document.createElement('div');
+        bar.className = 'terminal-line';
+        bar.innerHTML = '░░░░░░░░░░░░░░░░ 0%';
+        termBody.appendChild(bar);
+        termBody.scrollTop = termBody.scrollHeight;
+        let pct = 0;
+        const iv = setInterval(() => {
+            pct += Math.floor(Math.random() * 15) + 5;
+            if (pct >= 100) { pct = 100; clearInterval(iv); }
+            const filled = Math.floor(pct / 100 * 16);
+            bar.innerHTML = '▓'.repeat(filled) + '░'.repeat(16 - filled) + ` ${pct}%`;
+            if (pct === 100) {
+                termBody.scrollTop = termBody.scrollHeight;
+                setTimeout(() => {
+                    termPrint('ACCESS GRANTED. Welcome to the mainframe.', 'term-success');
+                    closeTerminal();
+                    activateUltraMode();
+                }, 300);
+            }
+        }, 120);
+    },
+    matrix() {
+        const mc = document.getElementById('matrix-canvas');
+        if (!mc) return;
+        const on = parseFloat(mc.style.opacity || '0.15') > 0;
+        mc.style.opacity = on ? '0' : '0.15';
+        termPrint(`Matrix rain: ${on ? '<span class="term-error">OFF</span>' : '<span class="term-success">ON</span>'}`);
+    },
+    ls() {
+        termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\ndrwxr-xr-x  <span class="term-accent">contact/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
+    },
+    date() { termPrint(new Date().toString()); },
+    clear() { termBody.innerHTML = ''; },
+    exit() { termPrint('Goodbye.', 'term-purple'); setTimeout(closeTerminal, 400); },
+    sudo() { termPrint('Nice try. You are not in the sudoers file. This incident will be reported.', 'term-error'); },
+    cd() { termPrint('There is no place like ~', 'term-accent'); },
+    git() { termPrint('fatal: not a git repository (or any parent up to mount point /)'); },
+    rm() { termPrint('rm: cannot remove \'/\': Permission denied', 'term-error'); }
+};
+
+termInput.addEventListener('keydown', (e) => {
+    if (e.key === '`') { e.stopPropagation(); return; }
+    if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        termHistoryIdx = Math.min(termHistoryIdx + 1, termHistory.length - 1);
+        termInput.value = termHistory[termHistoryIdx] || '';
+        return;
+    }
+    if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        termHistoryIdx = Math.max(termHistoryIdx - 1, -1);
+        termInput.value = termHistoryIdx === -1 ? '' : termHistory[termHistoryIdx];
+        return;
+    }
+    if (e.key !== 'Enter') return;
+    const raw = termInput.value.trim();
+    if (!raw) return;
+    const cmd = raw.toLowerCase().split(' ')[0];
+    termPrint(`<span class="term-accent">$</span> ${raw}`, 'term-prompt-echo');
+    termHistory.unshift(raw);
+    termHistoryIdx = -1;
+    termInput.value = '';
+    if (termCommands[cmd]) {
+        termCommands[cmd]();
+    } else {
+        termPrint(`command not found: <span class="term-error">${cmd}</span>. Type <span class="term-accent">help</span> for available commands.`);
+    }
+});
+
+// Hint badge
+setTimeout(() => {
+    const hint = document.createElement('div');
+    hint.className = 'terminal-hint';
+    hint.innerHTML = '` &nbsp;Open Terminal';
+    document.body.appendChild(hint);
+    setTimeout(() => hint.classList.add('fade'), 3000);
+    setTimeout(() => hint.remove(), 3700);
+}, 4000);
+
+// ===== PARTICLE BLACK HOLE (click + hold) =====
+let blackHole = null;
+let isHolding = false;
+let bhHoldTimer = null;
+let bhEl = null;
+let suppressNextClick = false;
+
+document.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    if (e.target.closest('a, button, input, textarea, .terminal-overlay, .navbar, .contact-form, .project-link')) return;
+    bhHoldTimer = setTimeout(() => {
+        isHolding = true;
+        blackHole = { x: e.clientX, y: e.clientY };
+        bhEl = document.createElement('div');
+        bhEl.className = 'black-hole-vortex';
+        bhEl.style.left = e.clientX + 'px';
+        bhEl.style.top = e.clientY + 'px';
+        document.body.appendChild(bhEl);
+    }, 350);
+});
+
+document.addEventListener('mousemove', (e) => {
+    if (!isHolding || !blackHole) return;
+    blackHole.x = e.clientX;
+    blackHole.y = e.clientY;
+    if (bhEl) { bhEl.style.left = e.clientX + 'px'; bhEl.style.top = e.clientY + 'px'; }
+});
+
+document.addEventListener('mouseup', () => {
+    clearTimeout(bhHoldTimer);
+    if (isHolding && blackHole) {
+        suppressNextClick = true;
+        if (typeof particles !== 'undefined') {
+            particles.forEach(p => {
+                const dx = p.x - blackHole.x;
+                const dy = p.y - blackHole.y;
+                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                const force = Math.min(800 / dist, 25);
+                p.baseX += (dx / dist) * force;
+                p.baseY += (dy / dist) * force;
+            });
+        }
+        for (let i = 0; i < 3; i++) {
+            const ring = document.createElement('div');
+            ring.className = 'bh-shockwave';
+            ring.style.left = blackHole.x + 'px';
+            ring.style.top = blackHole.y + 'px';
+            ring.style.animationDelay = `${i * 0.12}s`;
+            document.body.appendChild(ring);
+            setTimeout(() => ring.remove(), 1000);
+        }
+        document.body.style.filter = 'brightness(2)';
+        setTimeout(() => document.body.style.filter = '', 120);
+        if (bhEl) { bhEl.remove(); bhEl = null; }
+        setTimeout(() => { suppressNextClick = false; }, 100);
+    }
+    isHolding = false;
+    blackHole = null;
+});
+
+// ===== WARP SPEED (shake mouse fast) =====
+let warpCooldown = false;
+let warpLastX = 0, warpLastY = 0, warpLastT = 0;
+let warpSpeeds = [];
+
+document.addEventListener('mousemove', (e) => {
+    const now = performance.now();
+    const dt = now - warpLastT;
+    if (dt > 0 && dt < 80) {
+        const dx = e.clientX - warpLastX;
+        const dy = e.clientY - warpLastY;
+        const speed = Math.sqrt(dx * dx + dy * dy) / dt;
+        warpSpeeds.push(speed);
+        if (warpSpeeds.length > 6) warpSpeeds.shift();
+        if (!warpCooldown && warpSpeeds.length >= 5) {
+            const avg = warpSpeeds.reduce((a, b) => a + b, 0) / warpSpeeds.length;
+            if (avg > 3.5) triggerWarp();
+        }
+    }
+    warpLastX = e.clientX;
+    warpLastY = e.clientY;
+    warpLastT = now;
+});
+
+function triggerWarp() {
+    warpCooldown = true;
+    warpSpeeds = [];
+    const warpEl = document.createElement('canvas');
+    warpEl.width = window.innerWidth;
+    warpEl.height = window.innerHeight;
+    warpEl.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99990;';
+    document.body.appendChild(warpEl);
+    const wCtx = warpEl.getContext('2d');
+    const cx = warpEl.width / 2;
+    const cy = warpEl.height / 2;
+    const COLORS = ['#14b8a6', '#06b6d4', '#a855f7', '#ffffff', '#ec4899', '#22c55e'];
+    const streaks = Array.from({ length: 120 }, (_, i) => {
+        const angle = (Math.PI * 2 * i) / 120 + (Math.random() - 0.5) * 0.08;
+        const spd = 1.5 + Math.random() * 3;
+        const startR = Math.random() * 60;
+        return {
+            x: cx + Math.cos(angle) * startR,
+            y: cy + Math.sin(angle) * startR,
+            vx: Math.cos(angle) * spd,
+            vy: Math.sin(angle) * spd,
+            color: COLORS[Math.floor(Math.random() * COLORS.length)],
+            width: 0.5 + Math.random() * 1.5
+        };
+    });
+    const start = performance.now();
+    const dur = 750;
+    (function frame(now) {
+        const t = Math.min((now - start) / dur, 1);
+        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
+        wCtx.fillStyle = `rgba(10, 15, 15, ${0.12 + t * 0.08})`;
+        wCtx.fillRect(0, 0, warpEl.width, warpEl.height);
+        streaks.forEach(s => {
+            const accel = 1 + ease * 15;
+            const nx = s.x + s.vx * accel;
+            const ny = s.y + s.vy * accel;
+            wCtx.beginPath();
+            wCtx.moveTo(s.x, s.y);
+            wCtx.lineTo(nx, ny);
+            wCtx.strokeStyle = s.color;
+            wCtx.globalAlpha = (1 - t) * 0.9;
+            wCtx.lineWidth = s.width * (1 + ease);
+            wCtx.stroke();
+            s.x = nx; s.y = ny;
+        });
+        wCtx.globalAlpha = 1;
+        if (t < 1) requestAnimationFrame(frame);
+        else {
+            warpEl.remove();
+            setTimeout(() => { warpCooldown = false; }, 4000);
+        }
+    })(start);
 }
