@@ -149,6 +149,20 @@ body {
     .projects-cta a * {
         pointer-events: none !important;
     }
+
+    /* Terminal - use normal system cursors, no code icon */
+    .terminal-overlay,
+    .terminal-overlay * {
+        cursor: default !important;
+    }
+    .terminal-overlay button,
+    .terminal-overlay .terminal-close-btn {
+        cursor: pointer !important;
+    }
+    .terminal-overlay input,
+    .terminal-overlay .terminal-input {
+        cursor: text !important;
+    }
 }
 
 /* Code symbol trail */

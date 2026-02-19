@@ -645,6 +645,9 @@ function activateUltraMode() {
 // Black hole state (declared here so Particle.update() can reference it safely)
 let blackHole = null;
 let isHolding = false;
+const BH_BASE_RADIUS = 96;       // base radius in px (matches 192px CSS diameter)
+const BH_GROWTH_PER_PARTICLE = 1; // px of radius growth per absorbed particle
+const BH_MAX_RADIUS = 200;        // caps at 400px diameter
 
 // ===== Particle Physics Background =====
 const canvas = document.getElementById('particle-canvas');
@@ -724,13 +727,66 @@ class Particle {
         }
 
         // BLACK HOLE ATTRACTION
+        // Safety: if absorbed but black hole is gone, respawn immediately
+        if (this.absorbed && !blackHole) {
+            this.x = Math.random() * canvas.width;
+            this.y = Math.random() * canvas.height;
+            this.baseX = this.x;
+            this.baseY = this.y;
+            this.absorbed = false;
+        }
+
         if (blackHole) {
             let bhDx = blackHole.x - this.x;
             let bhDy = blackHole.y - this.y;
             let bhDist = Math.sqrt(bhDx * bhDx + bhDy * bhDy) || 1;
-            let bhForce = Math.min(7000 / (bhDist * bhDist), 14);
-            this.x += (bhDx / bhDist) * bhForce;
-            this.y += (bhDy / bhDist) * bhForce;
+
+            if (this.absorbed) {
+                // Count down regen timer, then respawn at a random position
+                this.regenTimer--;
+                if (this.regenTimer <= 0) {
+                    this.x = Math.random() * canvas.width;
+                    this.y = Math.random() * canvas.height;
+                    this.baseX = this.x;
+                    this.baseY = this.y;
+                    this.absorbed = false;
+                } else {
+                    // Keep hidden at black hole center while waiting
+                    this.x = blackHole.x;
+                    this.y = blackHole.y;
+                    this.baseX = blackHole.x;
+                    this.baseY = blackHole.y;
+                }
+                return;
+            }
+
+            // Event horizon: absorb particle when close enough
+            if (bhDist < blackHole.radius * 0.15) {
+                this.absorbed = true;
+                this.regenTimer = 90 + Math.floor(Math.random() * 60); // ~1.5–2.5s at 60fps
+                this.x = blackHole.x;
+                this.y = blackHole.y;
+                this.baseX = blackHole.x;
+                this.baseY = blackHole.y;
+                blackHole.absorbedCount++;
+                blackHole.radius = Math.min(BH_BASE_RADIUS + blackHole.absorbedCount * BH_GROWTH_PER_PARTICLE, BH_MAX_RADIUS);
+                if (bhEl) {
+                    const diam = blackHole.radius * 2;
+                    bhEl.style.width = diam + 'px';
+                    bhEl.style.height = diam + 'px';
+                }
+                return;
+            }
+
+            // Pull particles within a range that grows with the black hole
+            let sizeScale = blackHole.radius / BH_BASE_RADIUS;
+            let attractRange = blackHole.radius * 6;
+            if (bhDist < attractRange) {
+                // 1/dist falloff gives noticeable pull across the full range
+                let bhForce = Math.min(550 * sizeScale / bhDist, 14 * sizeScale);
+                this.x += (bhDx / bhDist) * bhForce;
+                this.y += (bhDy / bhDist) * bhForce;
+            }
         }
 
         // Slowly drift back to base position
@@ -1311,7 +1367,11 @@ document.addEventListener('mousedown', (e) => {
     if (e.target.closest('a, button, input, textarea, .terminal-overlay, .navbar, .contact-form, .project-link')) return;
     bhHoldTimer = setTimeout(() => {
         isHolding = true;
-        blackHole = { x: e.clientX, y: e.clientY };
+        // Reset any previously absorbed particles before creating new black hole
+        if (typeof particles !== 'undefined') {
+            particles.forEach(p => { p.absorbed = false; });
+        }
+        blackHole = { x: e.clientX, y: e.clientY, radius: BH_BASE_RADIUS, absorbedCount: 0 };
         bhEl = document.createElement('div');
         bhEl.className = 'black-hole-vortex';
         bhEl.style.left = e.clientX + 'px';
@@ -1333,12 +1393,23 @@ document.addEventListener('mouseup', () => {
         suppressNextClick = true;
         if (typeof particles !== 'undefined') {
             particles.forEach(p => {
-                const dx = p.x - blackHole.x;
-                const dy = p.y - blackHole.y;
-                const dist = Math.sqrt(dx * dx + dy * dy) || 1;
-                const force = Math.min(800 / dist, 25);
-                p.baseX += (dx / dist) * force;
-                p.baseY += (dy / dist) * force;
+                if (p.absorbed) {
+                    // Scatter absorbed particles outward in random directions
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 80 + Math.random() * 200;
+                    p.absorbed = false;
+                    p.x = blackHole.x;
+                    p.y = blackHole.y;
+                    p.baseX = Math.max(0, Math.min(canvas.width, blackHole.x + Math.cos(angle) * dist));
+                    p.baseY = Math.max(0, Math.min(canvas.height, blackHole.y + Math.sin(angle) * dist));
+                } else {
+                    const dx = p.x - blackHole.x;
+                    const dy = p.y - blackHole.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy) || 1;
+                    const force = Math.min(800 / dist, 25);
+                    p.baseX += (dx / dist) * force;
+                    p.baseY += (dy / dist) * force;
+                }
             });
         }
         for (let i = 0; i < 3; i++) {
@@ -1359,89 +1430,3 @@ document.addEventListener('mouseup', () => {
     blackHole = null;
 });
 
-// ===== WARP SPEED (shake mouse fast for 2 seconds) =====
-let warpCooldown = false;
-let warpLastX = 0, warpLastY = 0, warpLastT = 0;
-let warpSpeeds = [];
-let warpShakeStart = null;
-
-document.addEventListener('mousemove', (e) => {
-    const now = performance.now();
-    const dt = now - warpLastT;
-    if (dt > 0 && dt < 80) {
-        const dx = e.clientX - warpLastX;
-        const dy = e.clientY - warpLastY;
-        const speed = Math.sqrt(dx * dx + dy * dy) / dt;
-        warpSpeeds.push(speed);
-        if (warpSpeeds.length > 6) warpSpeeds.shift();
-        if (!warpCooldown && warpSpeeds.length >= 5) {
-            const avg = warpSpeeds.reduce((a, b) => a + b, 0) / warpSpeeds.length;
-            if (avg > 3.5) {
-                if (!warpShakeStart) warpShakeStart = now;
-                else if (now - warpShakeStart >= 2000) {
-                    warpShakeStart = null;
-                    triggerWarp();
-                }
-            } else {
-                warpShakeStart = null;
-            }
-        }
-    }
-    warpLastX = e.clientX;
-    warpLastY = e.clientY;
-    warpLastT = now;
-});
-
-function triggerWarp() {
-    warpCooldown = true;
-    warpSpeeds = [];
-    const warpEl = document.createElement('canvas');
-    warpEl.width = window.innerWidth;
-    warpEl.height = window.innerHeight;
-    warpEl.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99990;';
-    document.body.appendChild(warpEl);
-    const wCtx = warpEl.getContext('2d');
-    const cx = warpEl.width / 2;
-    const cy = warpEl.height / 2;
-    const COLORS = ['#14b8a6', '#06b6d4', '#a855f7', '#ffffff', '#ec4899', '#22c55e'];
-    const streaks = Array.from({ length: 120 }, (_, i) => {
-        const angle = (Math.PI * 2 * i) / 120 + (Math.random() - 0.5) * 0.08;
-        const spd = 1.5 + Math.random() * 3;
-        const startR = Math.random() * 60;
-        return {
-            x: cx + Math.cos(angle) * startR,
-            y: cy + Math.sin(angle) * startR,
-            vx: Math.cos(angle) * spd,
-            vy: Math.sin(angle) * spd,
-            color: COLORS[Math.floor(Math.random() * COLORS.length)],
-            width: 0.5 + Math.random() * 1.5
-        };
-    });
-    const start = performance.now();
-    const dur = 750;
-    (function frame(now) {
-        const t = Math.min((now - start) / dur, 1);
-        const ease = t < 0.5 ? 2 * t * t : -1 + (4 - 2 * t) * t;
-        wCtx.fillStyle = `rgba(10, 15, 15, ${0.12 + t * 0.08})`;
-        wCtx.fillRect(0, 0, warpEl.width, warpEl.height);
-        streaks.forEach(s => {
-            const accel = 1 + ease * 15;
-            const nx = s.x + s.vx * accel;
-            const ny = s.y + s.vy * accel;
-            wCtx.beginPath();
-            wCtx.moveTo(s.x, s.y);
-            wCtx.lineTo(nx, ny);
-            wCtx.strokeStyle = s.color;
-            wCtx.globalAlpha = (1 - t) * 0.9;
-            wCtx.lineWidth = s.width * (1 + ease);
-            wCtx.stroke();
-            s.x = nx; s.y = ny;
-        });
-        wCtx.globalAlpha = 1;
-        if (t < 1) requestAnimationFrame(frame);
-        else {
-            warpEl.remove();
-            setTimeout(() => { warpCooldown = false; }, 4000);
-        }
-    })(start);
-}
