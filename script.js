@@ -642,6 +642,10 @@ function activateUltraMode() {
     }, 5000);
 }
 
+// Black hole state (declared here so Particle.update() can reference it safely)
+let blackHole = null;
+let isHolding = false;
+
 // ===== Particle Physics Background =====
 const canvas = document.getElementById('particle-canvas');
 const ctx = canvas.getContext('2d');
@@ -720,7 +724,7 @@ class Particle {
         }
 
         // BLACK HOLE ATTRACTION
-        if (typeof blackHole !== 'undefined' && blackHole) {
+        if (blackHole) {
             let bhDx = blackHole.x - this.x;
             let bhDy = blackHole.y - this.y;
             let bhDist = Math.sqrt(bhDx * bhDx + bhDy * bhDy) || 1;
@@ -1301,8 +1305,6 @@ setTimeout(() => {
 }, 4000);
 
 // ===== PARTICLE BLACK HOLE (click + hold) =====
-let blackHole = null;
-let isHolding = false;
 let bhHoldTimer = null;
 let bhEl = null;
 let suppressNextClick = false;
