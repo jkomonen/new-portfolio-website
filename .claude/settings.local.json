@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(start \"\" \"C:\\\\code\\\\projects\\\\testClaudeProject\\\\index.html\")",
+      "Bash(ren testClaudeProject new-portfolio-website)",
+      "Bash(cmd /c \"cd /d C:\\\\code\\\\projects && ren testClaudeProject new-portfolio-website\")",
+      "Bash(cmd /c \"dir C:\\\\code\\\\projects\")",
+      "Bash(powershell -Command \"Rename-Item -Path ''C:\\\\code\\\\projects\\\\testClaudeProject'' -NewName ''new-portfolio-website''\")",
+      "Bash(powershell -Command:*)"
+    ]
+  }
+}
