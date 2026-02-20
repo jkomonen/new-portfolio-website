@@ -876,6 +876,7 @@ class Particle {
                 this.baseX = blackHole.x;
                 this.baseY = blackHole.y;
                 blackHole.absorbedCount++;
+                blackHole.pendingPoints = (blackHole.pendingPoints || 0) + 1;
                 blackHole.radius = BH_BASE_RADIUS + blackHole.absorbedCount * BH_GROWTH_PER_PARTICLE;
                 if (bhEl) {
                     const diam = blackHole.radius * 2;
@@ -1547,6 +1548,7 @@ document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'TEXTAREA') return;
     if (e.key === '`') {
         e.preventDefault();
+        termHint.classList.remove('bouncing');
         termOpen ? closeTerminal() : openTerminal();
     }
     if (e.key === 'Escape') {
@@ -1578,7 +1580,7 @@ function termPrint(html, cls) {
 
 const termCommands = {
     help() {
-        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n\nSecret interactions:\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds`, 'term-pre');
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n\nSecret interactions:\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1676,13 +1678,84 @@ termInput.addEventListener('keydown', (e) => {
 const termHint = document.createElement('div');
 termHint.className = 'terminal-hint';
 termHint.innerHTML = '<span class="term-hint-key">`</span> Terminal';
-termHint.addEventListener('click', () => termOpen ? closeTerminal() : openTerminal());
+termHint.addEventListener('click', () => {
+    termHint.classList.remove('bouncing');
+    termOpen ? closeTerminal() : openTerminal();
+});
 document.body.appendChild(termHint);
+
+// Bounce the button after 6s if it hasn't been clicked yet
+setTimeout(() => {
+    if (!termOpen) termHint.classList.add('bouncing');
+}, 6000);
 
 // ===== PARTICLE BLACK HOLE (click + hold) =====
 let bhHoldTimer = null;
 let bhEl = null;
 let suppressNextClick = false;
+let bhPointsInterval = null;
+const BH_RECORD_KEY = 'bh_particle_record';
+
+function spawnBhPoints(x, y, count) {
+    const el = document.createElement('div');
+    el.textContent = '+' + count;
+    const size = Math.min(13 + count * 3, 32);
+    el.style.cssText = `
+        position:fixed;left:${x}px;top:${y - 55}px;
+        transform:translate(-50%,-50%);
+        color:#c084fc;font-family:'Fira Code',monospace;
+        font-size:${size}px;font-weight:700;
+        text-shadow:0 0 8px #a855f7,0 0 18px #7c3aed;
+        pointer-events:none;z-index:9995;
+        animation:bh-points-float 0.9s ease-out forwards;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 900);
+}
+
+function spawnBhTotal(x, y, total) {
+    const prev = parseInt(localStorage.getItem(BH_RECORD_KEY) || '0');
+    const isNew = total > prev;
+    if (total > 0) localStorage.setItem(BH_RECORD_KEY, Math.max(total, prev));
+
+    const el = document.createElement('div');
+    el.textContent = total + ' ABSORBED';
+    el.style.cssText = `
+        position:fixed;left:${x}px;top:${y - 18}px;
+        transform:translate(-50%,-50%);
+        color:#e879f9;font-family:'Fira Code',monospace;
+        font-size:20px;font-weight:700;letter-spacing:0.12em;
+        text-shadow:0 0 12px #a855f7,0 0 30px #7c3aed,0 0 50px #4c1d95;
+        pointer-events:none;z-index:9995;
+        animation:bh-total-pop 1.6s ease-out forwards;
+    `;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1600);
+
+    const rec = document.createElement('div');
+    if (isNew && total > 0) {
+        rec.textContent = '★ NEW RECORD!';
+        rec.style.color = '#fbbf24';
+        rec.style.textShadow = '0 0 10px #f59e0b, 0 0 24px #d97706';
+    } else if (prev > 0) {
+        rec.textContent = 'BEST: ' + Math.max(total, prev);
+        rec.style.color = '#94a3b8';
+        rec.style.textShadow = '0 0 8px #475569';
+    }
+    if (rec.textContent) {
+        rec.style.cssText += `
+            position:fixed;left:${x}px;top:${y + 18}px;
+            transform:translate(-50%,-50%);
+            font-family:'Fira Code',monospace;
+            font-size:13px;font-weight:600;letter-spacing:0.1em;
+            pointer-events:none;z-index:9995;
+            animation:bh-total-pop 1.6s ease-out forwards;
+            animation-fill-mode:backwards;animation-delay:0.15s;
+        `;
+        document.body.appendChild(rec);
+        setTimeout(() => rec.remove(), 1800);
+    }
+}
 
 document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
@@ -1693,12 +1766,21 @@ document.addEventListener('mousedown', (e) => {
         if (typeof particles !== 'undefined') {
             particles.forEach(p => { p.absorbed = false; });
         }
-        blackHole = { x: e.clientX, y: e.clientY, radius: BH_BASE_RADIUS, absorbedCount: 0 };
+        bhComboTotal = 0;
+        blackHole = { x: e.clientX, y: e.clientY, radius: BH_BASE_RADIUS, absorbedCount: 0, pendingPoints: 0 };
         bhEl = document.createElement('div');
         bhEl.className = 'black-hole-vortex';
         bhEl.style.left = e.clientX + 'px';
         bhEl.style.top = e.clientY + 'px';
         document.body.appendChild(bhEl);
+        bhPointsInterval = setInterval(() => {
+            if (!blackHole) { clearInterval(bhPointsInterval); return; }
+            if (blackHole.pendingPoints > 0) {
+                spawnBhPoints(blackHole.x, blackHole.y, blackHole.pendingPoints);
+
+                blackHole.pendingPoints = 0;
+            }
+        }, 250);
     }, 350);
 });
 
@@ -1742,6 +1824,10 @@ document.addEventListener('mouseup', () => {
             ring.style.animationDelay = `${i * 0.12}s`;
             document.body.appendChild(ring);
             setTimeout(() => ring.remove(), 1000);
+        }
+        clearInterval(bhPointsInterval);
+        if (blackHole && blackHole.absorbedCount > 0) {
+            spawnBhTotal(blackHole.x, blackHole.y, blackHole.absorbedCount);
         }
         document.body.style.filter = 'brightness(2)';
         setTimeout(() => document.body.style.filter = '', 120);
@@ -2376,6 +2462,7 @@ document.addEventListener('mousemove', (e) => {
         constellationActive = true;
         const c = CONSTELLATIONS[constellIdx];
         assignParticles(c);
+        dimEl.style.transition = 'background 4s ease';
         dimEl.style.background = 'rgba(0, 5, 20, 0.38)';
         setTimeout(() => {
             if (!constellationActive) return;
@@ -2409,7 +2496,7 @@ document.addEventListener('mousemove', (e) => {
         clearTimeout(cycleTimer);
         cancelAnimationFrame(twinkleAnimId);
         cCanvas.style.opacity = '0';
-        dimEl.style.transition = 'background 0.8s ease';
+        dimEl.style.transition = 'none';
         dimEl.style.background = 'rgba(0, 5, 20, 0)';
         if (typeof eternalFActive === 'undefined' || !eternalFActive) {
             particles.forEach((p, i) => {

@@ -1457,7 +1457,6 @@ h1, h2, h3, h4, h5, h6 {
 /* ===== Footer ===== */
 .footer {
     padding: 3rem 0;
-    border-top: 1px solid var(--border-color);
 }
 
 .footer-content {
@@ -1751,6 +1750,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 .terminal-input::placeholder { color: #334155; }
 
+@keyframes terminal-bounce {
+    0%, 50%, 100% { transform: translateY(0)     rotate(0deg);  }
+    58%            { transform: translateY(-22px) rotate(0deg);  } /* jumped up, flat */
+    63%            { transform: translateY(-22px) rotate(-12deg);} /* shake left (in air) */
+    68%            { transform: translateY(-22px) rotate(12deg); } /* shake right (in air) */
+    73%            { transform: translateY(-22px) rotate(-8deg); } /* shake left */
+    78%            { transform: translateY(-22px) rotate(8deg);  } /* shake right */
+    83%            { transform: translateY(-22px) rotate(-4deg); } /* shake left */
+    87%            { transform: translateY(-22px) rotate(4deg);  } /* shake right */
+    91%            { transform: translateY(-22px) rotate(0deg);  } /* straighten up */
+    98%            { transform: translateY(0)     rotate(0deg);  } /* drop back down */
+}
 .terminal-hint {
     position: fixed; bottom: 1.5rem; right: 1.5rem;
     background: rgba(20, 184, 166, 0.12);
@@ -1759,8 +1770,14 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.75rem; padding: 0.4rem 0.8rem;
     border-radius: 6px; z-index: 9990;
     cursor: pointer; user-select: none;
+    transform: translateY(0);
+    will-change: transform;
     transition: background 0.2s, border-color 0.2s;
     display: flex; align-items: center; gap: 0.4rem;
+}
+.terminal-hint.bouncing {
+    animation: terminal-bounce 3s ease infinite;
+    transform-origin: center center;
 }
 .terminal-hint:hover {
     background: rgba(20, 184, 166, 0.22);
@@ -1837,6 +1854,18 @@ h1, h2, h3, h4, h5, h6 {
     0%   { width: 0; height: 0; opacity: 1; border-color: rgba(168,85,247,0.9); }
     50%  { border-color: rgba(20,184,166,0.6); }
     100% { width: 500px; height: 500px; opacity: 0; }
+}
+
+@keyframes bh-points-float {
+    0%   { opacity: 1; transform: translate(-50%, -50%) scale(1.3); }
+    40%  { opacity: 1; transform: translate(-50%, calc(-50% - 30px)) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, calc(-50% - 70px)) scale(0.7); }
+}
+@keyframes bh-total-pop {
+    0%   { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20%  { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+    70%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 }
 
 /* ===== NYAN VIRUS ===== */
