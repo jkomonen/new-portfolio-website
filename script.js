@@ -2033,3 +2033,176 @@ function triggerRageResponse(x, y) {
         }, i * 55);
     }
 }
+
+// ===== RETRO BOOT SEQUENCE =====
+// First-time visitors only (localStorage). Full-screen fake BIOS before the site fades in.
+(function initBootSequence() {
+    if (localStorage.getItem('joshuaOSBooted')) return;
+    localStorage.setItem('joshuaOSBooted', '1');
+
+    let skipped = false;
+
+    const screen = document.createElement('div');
+    screen.id = 'boot-screen';
+    screen.style.cssText = `
+        position: fixed; inset: 0; z-index: 999999;
+        background: #010801;
+        font-family: 'Fira Code', 'Courier New', monospace;
+        font-size: clamp(0.62rem, 1.4vw, 0.88rem);
+        line-height: 1.65;
+        padding: clamp(1.2rem, 4vw, 2.8rem) clamp(1.5rem, 5vw, 4rem);
+        overflow: hidden;
+        cursor: none;
+    `;
+
+    // CRT phosphor scanlines
+    const scanlines = document.createElement('div');
+    scanlines.style.cssText = `
+        position: absolute; inset: 0; pointer-events: none; z-index: 3;
+        background: repeating-linear-gradient(
+            0deg, transparent, transparent 2px,
+            rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
+        );
+    `;
+    screen.appendChild(scanlines);
+
+    // Skip hint
+    const skipHint = document.createElement('div');
+    skipHint.style.cssText = `
+        position: absolute; bottom: 1.4rem; right: 2rem; z-index: 4;
+        color: #142014; font-family: 'Fira Code', monospace;
+        font-size: 0.62rem; letter-spacing: 0.04em; pointer-events: none;
+    `;
+    skipHint.textContent = 'click or press any key to skip';
+    screen.appendChild(skipHint);
+
+    const output = document.createElement('div');
+    output.style.cssText = 'position: relative; z-index: 2;';
+    screen.appendChild(output);
+
+    document.body.appendChild(screen);
+    document.body.style.overflow = 'hidden';
+
+    // BIOS POST beep
+    try {
+        const ac = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ac.createOscillator(), g = ac.createGain();
+        osc.connect(g); g.connect(ac.destination);
+        osc.type = 'square'; osc.frequency.value = 880;
+        g.gain.setValueAtTime(0.07, ac.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
+        osc.start(); osc.stop(ac.currentTime + 0.2);
+    } catch (_) {}
+
+    function addLine(text = '', color = '#00ff41', glow = true) {
+        const div = document.createElement('div');
+        div.style.color = color;
+        if (glow && color === '#00ff41') div.style.textShadow = '0 0 7px rgba(0,255,65,0.35)';
+        div.textContent = text;
+        output.appendChild(div);
+        return div;
+    }
+
+    function wait(ms) {
+        return new Promise(resolve => setTimeout(resolve, skipped ? 0 : ms));
+    }
+
+    function animateBar(label) {
+        return new Promise(resolve => {
+            if (skipped) { addLine(`  [${'█'.repeat(22)}] ${label.padEnd(26)} OK`, '#22c55e'); resolve(); return; }
+            const div = addLine('');
+            let i = 0;
+            const total = 22;
+            const iv = setInterval(() => {
+                if (skipped) { clearInterval(iv); resolve(); return; }
+                i++;
+                div.textContent = `  [${'█'.repeat(i)}${'░'.repeat(total - i)}] ${label}`;
+                div.style.color = '#00cc33';
+                div.style.textShadow = '0 0 5px rgba(0,204,51,0.25)';
+                if (i >= total) {
+                    clearInterval(iv);
+                    div.textContent = `  [${'█'.repeat(total)}] ${label.padEnd(26)} OK`;
+                    div.style.color = '#22c55e';
+                    div.style.textShadow = '0 0 8px rgba(34,197,94,0.4)';
+                    resolve();
+                }
+            }, 26);
+        });
+    }
+
+    function dismiss() {
+        if (skipped) return;
+        skipped = true;
+        document.removeEventListener('keydown', onKey);
+        screen.style.transition = 'opacity 0.65s ease';
+        screen.style.opacity = '0';
+        document.body.style.overflow = '';
+        setTimeout(() => screen.remove(), 700);
+    }
+
+    function onKey() { dismiss(); }
+    screen.addEventListener('click', dismiss);
+    document.addEventListener('keydown', onKey, { once: true });
+
+    async function runBoot() {
+        addLine('JOSHUA BIOS v1.0  © 1994 Joshua Systems Inc.  All Rights Reserved', '#a8b8a8', false);
+        await wait(120);
+        addLine('CPU: Creative Mind Pro @ 3.6GHz          L2 Cache: Unlimited', '#4a6a4a', false);
+        addLine('DRAM: Maximum Caffeine Speed              BIOS Build: 19941027', '#4a6a4a', false);
+        await wait(300);
+
+        addLine('');
+        addLine('Memory Test:', '#4a6a4a', false);
+        const ramLine = addLine('       0 KB', '#00ff41');
+        await new Promise(resolve => {
+            let kb = 0;
+            const iv = setInterval(() => {
+                if (skipped) { clearInterval(iv); ramLine.textContent = '  65536 KB OK'; resolve(); return; }
+                kb = Math.min(kb + 2048 + Math.floor(Math.random() * 1024), 65536);
+                ramLine.textContent = `  ${String(kb).padStart(6)} KB OK`;
+                if (kb >= 65536) { clearInterval(iv); resolve(); }
+            }, 35);
+        });
+        await wait(250);
+
+        addLine('');
+        addLine('──────────────────────────────────────────────────────────────────', '#1a2e1a', false);
+        addLine('  JOSHUA OS v1.0 — Loading personality modules...', '#d8e8d8', false);
+        addLine('──────────────────────────────────────────────────────────────────', '#1a2e1a', false);
+        addLine('');
+        await wait(180);
+
+        await animateBar('humor.dll');          await wait(55);
+        await animateBar('caffeine.sys');        await wait(55);
+        await animateBar('curiosity.exe');       await wait(55);
+        await animateBar('problem_solver.dll');  await wait(55);
+        await animateBar('empathy.mod');
+        await wait(160);
+
+        addLine('');
+        addLine('Mounting filesystems...', '#4a6a4a', false);
+        await wait(160);
+        addLine('  /dev/brain0 ..................................... OK', '#22c55e');
+        await wait(110);
+        addLine('  /dev/keyboard0 .................................. OK', '#22c55e');
+        await wait(110);
+        addLine('  /dev/coffee ...................................... CRITICAL', '#f97316', false);
+        await wait(320);
+
+        addLine('');
+        addLine('All systems nominal. 0 errors detected.', '#00ff41');
+        await wait(360);
+        addLine('Starting portfolio interface...', '#d8e8d8', false);
+        await wait(460);
+
+        // Blinking cursor then fade
+        const cur = addLine('_');
+        let vis = true;
+        const blinkIv = setInterval(() => { cur.style.opacity = (vis = !vis) ? '1' : '0'; }, 380);
+        await wait(820);
+        clearInterval(blinkIv);
+        dismiss();
+    }
+
+    runBoot();
+})();
