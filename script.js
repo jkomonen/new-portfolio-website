@@ -2150,3 +2150,194 @@ document.addEventListener('mousemove', (e) => {
     lastDrawX = x;
     lastDrawY = y;
 });
+
+// ===== PARTICLE CONSTELLATION MODE =====
+// 30 s of inactivity → particles drift into constellation shapes with
+// faint dashed connecting lines and a label. Any interaction snaps them back.
+(function initConstellationMode() {
+    const CONSTELLATIONS = [
+        {
+            name: 'Orion',
+            stars: [
+                { x: 0.36, y: 0.25 }, // Betelgeuse
+                { x: 0.64, y: 0.22 }, // Bellatrix
+                { x: 0.42, y: 0.46 }, // Alnitak
+                { x: 0.50, y: 0.44 }, // Alnilam
+                { x: 0.58, y: 0.42 }, // Mintaka
+                { x: 0.37, y: 0.70 }, // Saiph
+                { x: 0.65, y: 0.68 }, // Rigel
+                { x: 0.46, y: 0.14 }, // Pi³ Ori
+                { x: 0.54, y: 0.12 }, // Pi⁴ Ori
+            ],
+            lines: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[0,7],[1,8],[7,8]]
+        },
+        {
+            name: 'Big Dipper',
+            stars: [
+                { x: 0.28, y: 0.35 }, // Dubhe
+                { x: 0.28, y: 0.48 }, // Merak
+                { x: 0.40, y: 0.50 }, // Phecda
+                { x: 0.40, y: 0.37 }, // Megrez
+                { x: 0.52, y: 0.30 }, // Alioth
+                { x: 0.62, y: 0.26 }, // Mizar
+                { x: 0.72, y: 0.23 }, // Alkaid
+            ],
+            lines: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]]
+        },
+        {
+            name: 'Cassiopeia',
+            stars: [
+                { x: 0.28, y: 0.48 }, // Caph
+                { x: 0.38, y: 0.34 }, // Schedar
+                { x: 0.50, y: 0.44 }, // Gamma Cas
+                { x: 0.62, y: 0.32 }, // Ruchbah
+                { x: 0.72, y: 0.44 }, // Segin
+            ],
+            lines: [[0,1],[1,2],[2,3],[3,4]]
+        },
+        {
+            name: 'Lyra',
+            stars: [
+                { x: 0.50, y: 0.22 }, // Vega
+                { x: 0.38, y: 0.46 }, // Beta Lyrae
+                { x: 0.62, y: 0.46 }, // Gamma Lyrae
+                { x: 0.42, y: 0.60 }, // Delta Lyrae
+                { x: 0.58, y: 0.60 }, // Zeta Lyrae
+            ],
+            lines: [[0,1],[0,2],[1,3],[2,4],[3,4]]
+        },
+    ];
+
+    let constellationActive = false;
+    let constellIdx = Math.floor(Math.random() * CONSTELLATIONS.length);
+    let constellationTimer = null;
+    let cycleTimer = null;
+    let lastActivityReset = 0;
+
+    // ── Overlay canvas for lines + label ────────────────────────────────
+    const cCanvas = document.createElement('canvas');
+    cCanvas.style.cssText = `
+        position: fixed; inset: 0; pointer-events: none; z-index: 9975;
+        opacity: 0; transition: opacity 2.5s ease;
+    `;
+    cCanvas.width  = window.innerWidth;
+    cCanvas.height = window.innerHeight;
+    document.body.appendChild(cCanvas);
+    const cCtx = cCanvas.getContext('2d');
+
+    window.addEventListener('resize', () => {
+        cCanvas.width  = window.innerWidth;
+        cCanvas.height = window.innerHeight;
+        if (constellationActive) renderLines(CONSTELLATIONS[constellIdx]);
+    });
+
+    function toPixels(constellation) {
+        return constellation.stars.map(s => ({
+            x: s.x * window.innerWidth,
+            y: s.y * window.innerHeight,
+        }));
+    }
+
+    function renderLines(constellation) {
+        cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
+        const pts = toPixels(constellation);
+
+        // Dashed connecting lines
+        cCtx.save();
+        cCtx.strokeStyle = 'rgba(148, 210, 230, 0.22)';
+        cCtx.lineWidth = 1;
+        cCtx.setLineDash([4, 7]);
+        constellation.lines.forEach(([a, b]) => {
+            cCtx.beginPath();
+            cCtx.moveTo(pts[a].x, pts[a].y);
+            cCtx.lineTo(pts[b].x, pts[b].y);
+            cCtx.stroke();
+        });
+        cCtx.restore();
+
+        // Soft star halos
+        pts.forEach(({ x, y }) => {
+            const g = cCtx.createRadialGradient(x, y, 0, x, y, 7);
+            g.addColorStop(0, 'rgba(148, 210, 230, 0.55)');
+            g.addColorStop(1, 'rgba(148, 210, 230, 0)');
+            cCtx.beginPath();
+            cCtx.arc(x, y, 7, 0, Math.PI * 2);
+            cCtx.fillStyle = g;
+            cCtx.fill();
+        });
+
+        // Label — centred below the lowest star
+        const cx   = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+        const botY = Math.max(...pts.map(p => p.y)) + 36;
+        cCtx.font      = "12px 'Fira Code', monospace";
+        cCtx.fillStyle = 'rgba(148, 210, 230, 0.42)';
+        cCtx.textAlign = 'center';
+        cCtx.fillText(constellation.name.toUpperCase(), cx, Math.min(botY, cCanvas.height - 12));
+    }
+
+    function assignParticles(constellation) {
+        const pts = toPixels(constellation);
+        [...particles]
+            .sort(() => Math.random() - 0.5)
+            .forEach((p, i) => {
+                const { x, y } = pts[i % pts.length];
+                p.fTarget    = { x: x + (Math.random() - 0.5) * 18, y: y + (Math.random() - 0.5) * 18 };
+                p.fLerpSpeed = 0.004 + Math.random() * 0.008; // slow drift
+            });
+    }
+
+    function activate() {
+        if (constellationActive) return;
+        if (typeof eternalFActive !== 'undefined' && eternalFActive) return;
+        constellationActive = true;
+        assignParticles(CONSTELLATIONS[constellIdx]);
+        // Lines fade in after particles have had time to drift into shape
+        setTimeout(() => {
+            if (!constellationActive) return;
+            renderLines(CONSTELLATIONS[constellIdx]);
+            cCanvas.style.opacity = '1';
+        }, 4000);
+        cycleTimer = setTimeout(cycleTo, 40000);
+    }
+
+    function cycleTo() {
+        if (!constellationActive) return;
+        constellIdx = (constellIdx + 1) % CONSTELLATIONS.length;
+        cCanvas.style.opacity = '0';
+        setTimeout(() => {
+            if (!constellationActive) return;
+            assignParticles(CONSTELLATIONS[constellIdx]);
+            setTimeout(() => {
+                if (!constellationActive) return;
+                renderLines(CONSTELLATIONS[constellIdx]);
+                cCanvas.style.opacity = '1';
+                cycleTimer = setTimeout(cycleTo, 40000);
+            }, 3500);
+        }, 2500);
+    }
+
+    function deactivate() {
+        if (!constellationActive) return;
+        constellationActive = false;
+        clearTimeout(cycleTimer);
+        cCanvas.style.opacity = '0';
+        if (typeof eternalFActive === 'undefined' || !eternalFActive) {
+            particles.forEach(p => { p.fTarget = null; });
+        }
+    }
+
+    function onActivity() {
+        if (constellationActive) deactivate();
+        const now = Date.now();
+        if (now - lastActivityReset < 800) return;
+        lastActivityReset = now;
+        clearTimeout(constellationTimer);
+        constellationTimer = setTimeout(activate, 30000);
+    }
+
+    ['mousemove', 'mousedown', 'keydown', 'scroll', 'touchstart'].forEach(ev =>
+        document.addEventListener(ev, onActivity, { passive: true })
+    );
+
+    constellationTimer = setTimeout(activate, 30000);
+})();
