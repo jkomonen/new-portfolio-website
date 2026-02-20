@@ -704,6 +704,14 @@ class Particle {
     }
 
     update() {
+        // ETERNAL F - override all physics, drift to assigned target
+        if (this.fTarget) {
+            this.x += (this.fTarget.x - this.x) * (this.fLerpSpeed || 0.015);
+            this.y += (this.fTarget.y - this.y) * (this.fLerpSpeed || 0.015);
+            this.draw();
+            return;
+        }
+
         // MAGNETIC ATTRACTION - particles gently pulled toward cursor
         if (globalMouseX && globalMouseY) {
             let dx = globalMouseX - this.x;
@@ -1446,6 +1454,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
         if (termOpen) closeTerminal();
         if (matrixRainActive) matrixRain.toggle();
+        if (eternalFCleanup) eternalFCleanup();
     }
 });
 
@@ -1471,7 +1480,7 @@ function termPrint(html, cls) {
 
 const termCommands = {
     help() {
-        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal`, 'term-pre');
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n\nEaster eggs:\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1669,5 +1678,165 @@ musicToggle.addEventListener('click', (e) => {
     musicToggle.classList.toggle('muted', bgMusic.muted);
     musicToggle.textContent = bgMusic.muted ? '🔇' : '🔊';
     musicToggle.title = bgMusic.muted ? 'Unmute music' : 'Mute music';
+});
+
+// ===== THE ETERNAL F =====
+// Hold F for 3 seconds anywhere on the page to pay respects.
+// Particles stop, slowly drift into a giant glowing F, music fades, page dims.
+// Then everything snaps back.
+let eternalFActive = false;
+let eternalFHoldTimer = null;
+let eternalFKeyDown = false;
+let eternalFCleanup = null;
+
+function getEternalFTargets() {
+    const tempCanvas = document.createElement('canvas');
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCanvas.width = window.innerWidth;
+    tempCanvas.height = window.innerHeight;
+
+    const fontSize = Math.min(window.innerWidth * 0.55, window.innerHeight * 0.7);
+    tempCtx.font = `bold ${fontSize}px Arial, sans-serif`;
+    tempCtx.fillStyle = 'white';
+    tempCtx.textBaseline = 'middle';
+    tempCtx.textAlign = 'center';
+    tempCtx.fillText('F', window.innerWidth / 2, window.innerHeight / 2);
+
+    const imageData = tempCtx.getImageData(0, 0, tempCanvas.width, tempCanvas.height);
+    const targets = [];
+    const step = 10;
+
+    for (let y = 0; y < tempCanvas.height; y += step) {
+        for (let x = 0; x < tempCanvas.width; x += step) {
+            const idx = (y * tempCanvas.width + x) * 4;
+            if (imageData.data[idx + 3] > 128) {
+                // Slight random jitter so the F looks organic, not grid-stamped
+                targets.push({
+                    x: x + Math.random() * step * 0.8,
+                    y: y + Math.random() * step * 0.8
+                });
+            }
+        }
+    }
+    return targets;
+}
+
+function activateEternalF() {
+    if (eternalFActive) return;
+    eternalFActive = true;
+
+    // Dim the whole page
+    const overlay = document.createElement('div');
+    overlay.id = 'eternal-f-overlay';
+    overlay.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(0,0,0,0);
+        z-index: 9994; pointer-events: none;
+        transition: background 1.8s ease;
+    `;
+    document.body.appendChild(overlay);
+    requestAnimationFrame(() => { overlay.style.background = 'rgba(0,0,0,0.78)'; });
+
+    // Lift the particle canvas above the overlay so the F is visible
+    canvas.style.zIndex = '9995';
+
+    // "Paying respects" label — fades in after particles have mostly formed
+    const label = document.createElement('div');
+    label.id = 'eternal-f-label';
+    label.style.cssText = `
+        position: fixed; bottom: 11%; left: 50%;
+        transform: translateX(-50%);
+        font-family: 'Fira Code', monospace;
+        font-size: 0.9rem; letter-spacing: 0.45em;
+        color: rgba(100,116,139,0);
+        text-transform: uppercase;
+        z-index: 9999; pointer-events: none;
+        transition: color 1s ease 2.2s;
+        white-space: nowrap;
+    `;
+    label.textContent = '— paying respects —';
+    document.body.appendChild(label);
+    requestAnimationFrame(() => { label.style.color = 'rgba(100,116,139,0.75)'; });
+
+    // Fade out music
+    const savedVolume = bgMusic.volume;
+    const musicFadeOut = setInterval(() => {
+        bgMusic.volume = Math.max(0, bgMusic.volume - 0.022);
+        if (bgMusic.volume <= 0) clearInterval(musicFadeOut);
+    }, 60);
+
+    // Build F targets from canvas glyph sampling
+    const targets = getEternalFTargets().sort(() => Math.random() - 0.5);
+    const savedColors = particles.map(p => p.color);
+
+    particles.forEach((p, i) => {
+        p.fTarget = targets[i % targets.length];
+        // Each particle drifts at a slightly different speed for organic feel
+        p.fLerpSpeed = 0.007 + Math.random() * 0.013;
+        // Shift colour to bright teal so the F glows against the dark overlay
+        p.color = `rgba(94, 234, 212, ${0.65 + Math.random() * 0.35})`;
+    });
+
+    // Auto-restore after 5 s
+    const restoreTimer = setTimeout(() => {
+        deactivateEternalF(savedVolume, savedColors, musicFadeOut);
+    }, 5000);
+
+    eternalFCleanup = () => {
+        clearTimeout(restoreTimer);
+        deactivateEternalF(savedVolume, savedColors, musicFadeOut);
+    };
+}
+
+function deactivateEternalF(savedVolume, savedColors, musicFadeOutInterval) {
+    eternalFActive = false;
+    eternalFCleanup = null;
+
+    // Drop canvas back behind page content
+    canvas.style.zIndex = '-1';
+
+    // Release particles — they drift back to base positions naturally
+    particles.forEach((p, i) => {
+        p.fTarget = null;
+        if (savedColors[i]) p.color = savedColors[i];
+    });
+
+    // Fade music back in
+    clearInterval(musicFadeOutInterval);
+    const musicFadeIn = setInterval(() => {
+        bgMusic.volume = Math.min(savedVolume, bgMusic.volume + 0.022);
+        if (bgMusic.volume >= savedVolume) clearInterval(musicFadeIn);
+    }, 60);
+
+    // Undim page
+    const overlay = document.getElementById('eternal-f-overlay');
+    if (overlay) {
+        overlay.style.background = 'rgba(0,0,0,0)';
+        setTimeout(() => overlay.remove(), 1800);
+    }
+
+    // Fade out label
+    const label = document.getElementById('eternal-f-label');
+    if (label) {
+        label.style.transition = 'color 0.7s ease';
+        label.style.color = 'rgba(100,116,139,0)';
+        setTimeout(() => label.remove(), 800);
+    }
+}
+
+// Hold F for 3 seconds anywhere (not in input fields)
+document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if ((e.key === 'f' || e.key === 'F') && !eternalFKeyDown && !eternalFActive) {
+        eternalFKeyDown = true;
+        eternalFHoldTimer = setTimeout(activateEternalF, 3000);
+    }
+});
+
+document.addEventListener('keyup', (e) => {
+    if (e.key === 'f' || e.key === 'F') {
+        eternalFKeyDown = false;
+        clearTimeout(eternalFHoldTimer);
+    }
 });
 
