@@ -1648,13 +1648,13 @@ const termCommands = {
     rm() { termPrint('rm: cannot remove \'/\': Permission denied', 'term-error'); }
 };
 
-// ===== REELS VIEWER =====
-// TODO: Replace shortcodes with your actual Instagram reel IDs
-// e.g. for https://www.instagram.com/reel/ABC123xyz/ the shortcode is ABC123xyz
-const REEL_SHORTCODES = [
-    'TODO_SHORTCODE_1',
-    'TODO_SHORTCODE_2',
-    'TODO_SHORTCODE_3',
+// ===== BRAINROT VIEWER =====
+const BRAINROT_VIDEOS = [
+    { id: 'zZ7AimPACzc', label: 'Subway Surfers (1 hour)' },
+    { id: '3jEpiw87n5U', label: 'Subway Surfers gameplay' },
+    { id: 'n_Dv4JMiwK8', label: 'Minecraft Parkour (1h 20m)' },
+    { id: 'intRX7BRA90', label: 'Minecraft Parkour 60fps (1h 22m)' },
+    { id: 'MgWbntKZ3ds', label: 'Minecraft Parkour – Glowing Ore' },
 ];
 
 let reelsIdx = 0;
@@ -1663,10 +1663,13 @@ const reelsEl = document.createElement('div');
 reelsEl.className = 'reels-overlay';
 reelsEl.innerHTML = `
     <button class="reels-close" aria-label="Close">✕</button>
-    <iframe class="reels-frame" id="reels-frame" src="" allowfullscreen></iframe>
+    <span class="reels-label" id="reels-label"></span>
+    <iframe class="reels-frame" id="reels-frame" src=""
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowfullscreen></iframe>
     <div class="reels-nav">
         <button class="reels-btn" id="reels-prev">← prev</button>
-        <span class="reels-counter" id="reels-counter">1 / ${REEL_SHORTCODES.length}</span>
+        <span class="reels-counter" id="reels-counter">1 / ${BRAINROT_VIDEOS.length}</span>
         <button class="reels-btn" id="reels-next">next →</button>
     </div>
 `;
@@ -1674,10 +1677,13 @@ document.body.appendChild(reelsEl);
 
 const reelsFrame = document.getElementById('reels-frame');
 const reelsCounter = document.getElementById('reels-counter');
+const reelsLabel = document.getElementById('reels-label');
 
 function updateReel() {
-    reelsFrame.src = `https://www.instagram.com/reel/${REEL_SHORTCODES[reelsIdx]}/embed/`;
-    reelsCounter.textContent = `${reelsIdx + 1} / ${REEL_SHORTCODES.length}`;
+    const v = BRAINROT_VIDEOS[reelsIdx];
+    reelsFrame.src = `https://www.youtube.com/embed/${v.id}?autoplay=1`;
+    reelsCounter.textContent = `${reelsIdx + 1} / ${BRAINROT_VIDEOS.length}`;
+    reelsLabel.textContent = v.label;
 }
 
 function openReels() {
@@ -1693,19 +1699,19 @@ function closeReels() {
 
 reelsEl.querySelector('.reels-close').addEventListener('click', closeReels);
 document.getElementById('reels-prev').addEventListener('click', () => {
-    reelsIdx = (reelsIdx - 1 + REEL_SHORTCODES.length) % REEL_SHORTCODES.length;
+    reelsIdx = (reelsIdx - 1 + BRAINROT_VIDEOS.length) % BRAINROT_VIDEOS.length;
     updateReel();
 });
 document.getElementById('reels-next').addEventListener('click', () => {
-    reelsIdx = (reelsIdx + 1) % REEL_SHORTCODES.length;
+    reelsIdx = (reelsIdx + 1) % BRAINROT_VIDEOS.length;
     updateReel();
 });
 
 document.addEventListener('keydown', (e) => {
     if (!reelsEl.classList.contains('open')) return;
     if (e.key === 'Escape') { closeReels(); }
-    if (e.key === 'ArrowLeft') { reelsIdx = (reelsIdx - 1 + REEL_SHORTCODES.length) % REEL_SHORTCODES.length; updateReel(); }
-    if (e.key === 'ArrowRight') { reelsIdx = (reelsIdx + 1) % REEL_SHORTCODES.length; updateReel(); }
+    if (e.key === 'ArrowLeft') { reelsIdx = (reelsIdx - 1 + BRAINROT_VIDEOS.length) % BRAINROT_VIDEOS.length; updateReel(); }
+    if (e.key === 'ArrowRight') { reelsIdx = (reelsIdx + 1) % BRAINROT_VIDEOS.length; updateReel(); }
 });
 
 termCommands.reels = function() {
