@@ -1583,7 +1583,7 @@ const termCommands = {
         termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n  <span class="term-rainbow">secrets</span>   – Secret interactions`, 'term-pre');
     },
     secrets() {
-        termPrint(`  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst\n  • Type <span class="term-accent">reels</span> in this terminal`, 'term-pre');
+        termPrint(`  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst\n  • Type <span class="term-accent">shorts</span> in this terminal`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1714,7 +1714,7 @@ document.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowRight') { reelsIdx = (reelsIdx + 1) % BRAINROT_VIDEOS.length; updateReel(); }
 });
 
-termCommands.reels = function() {
+termCommands.shorts = function() {
     termPrint(`Opening reels... <span class="term-accent">← →</span> to navigate, <span class="term-accent">Esc</span> to close`);
     setTimeout(() => { closeTerminal(); openReels(); }, 400);
 };
