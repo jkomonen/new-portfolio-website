@@ -2152,57 +2152,57 @@ document.addEventListener('mousemove', (e) => {
 });
 
 // ===== PARTICLE CONSTELLATION MODE =====
-// 30 s of inactivity → particles drift into constellation shapes with
-// faint dashed connecting lines and a label. Any interaction snaps them back.
+// 30 s of inactivity → particles cluster into real constellation shapes.
+// Animated twinkling stars with glow layers + diffraction spikes on bright stars.
 (function initConstellationMode() {
     const CONSTELLATIONS = [
         {
-            name: 'Orion',
+            name: 'Orion', subtitle: 'the hunter',
             stars: [
-                { x: 0.36, y: 0.25 }, // Betelgeuse
-                { x: 0.64, y: 0.22 }, // Bellatrix
-                { x: 0.42, y: 0.46 }, // Alnitak
-                { x: 0.50, y: 0.44 }, // Alnilam
-                { x: 0.58, y: 0.42 }, // Mintaka
-                { x: 0.37, y: 0.70 }, // Saiph
-                { x: 0.65, y: 0.68 }, // Rigel
-                { x: 0.46, y: 0.14 }, // Pi³ Ori
-                { x: 0.54, y: 0.12 }, // Pi⁴ Ori
+                { x: 0.36, y: 0.25, mag: 1 }, // Betelgeuse
+                { x: 0.64, y: 0.22, mag: 2 }, // Bellatrix
+                { x: 0.42, y: 0.46, mag: 2 }, // Alnitak
+                { x: 0.50, y: 0.44, mag: 2 }, // Alnilam
+                { x: 0.58, y: 0.42, mag: 2 }, // Mintaka
+                { x: 0.37, y: 0.70, mag: 3 }, // Saiph
+                { x: 0.65, y: 0.68, mag: 1 }, // Rigel
+                { x: 0.46, y: 0.14, mag: 4 }, // Pi³ Ori
+                { x: 0.54, y: 0.12, mag: 4 }, // Pi⁴ Ori
             ],
             lines: [[0,1],[0,2],[1,4],[2,3],[3,4],[2,5],[4,6],[0,7],[1,8],[7,8]]
         },
         {
-            name: 'Big Dipper',
+            name: 'Big Dipper', subtitle: 'part of ursa major',
             stars: [
-                { x: 0.28, y: 0.35 }, // Dubhe
-                { x: 0.28, y: 0.48 }, // Merak
-                { x: 0.40, y: 0.50 }, // Phecda
-                { x: 0.40, y: 0.37 }, // Megrez
-                { x: 0.52, y: 0.30 }, // Alioth
-                { x: 0.62, y: 0.26 }, // Mizar
-                { x: 0.72, y: 0.23 }, // Alkaid
+                { x: 0.28, y: 0.35, mag: 2 }, // Dubhe
+                { x: 0.28, y: 0.48, mag: 2 }, // Merak
+                { x: 0.40, y: 0.50, mag: 3 }, // Phecda
+                { x: 0.40, y: 0.37, mag: 3 }, // Megrez
+                { x: 0.52, y: 0.30, mag: 2 }, // Alioth
+                { x: 0.62, y: 0.26, mag: 2 }, // Mizar
+                { x: 0.72, y: 0.23, mag: 2 }, // Alkaid
             ],
             lines: [[0,1],[1,2],[2,3],[3,0],[3,4],[4,5],[5,6]]
         },
         {
-            name: 'Cassiopeia',
+            name: 'Cassiopeia', subtitle: 'the queen',
             stars: [
-                { x: 0.28, y: 0.48 }, // Caph
-                { x: 0.38, y: 0.34 }, // Schedar
-                { x: 0.50, y: 0.44 }, // Gamma Cas
-                { x: 0.62, y: 0.32 }, // Ruchbah
-                { x: 0.72, y: 0.44 }, // Segin
+                { x: 0.28, y: 0.48, mag: 3 }, // Caph
+                { x: 0.38, y: 0.34, mag: 2 }, // Schedar
+                { x: 0.50, y: 0.44, mag: 2 }, // Gamma Cas
+                { x: 0.62, y: 0.32, mag: 3 }, // Ruchbah
+                { x: 0.72, y: 0.44, mag: 3 }, // Segin
             ],
             lines: [[0,1],[1,2],[2,3],[3,4]]
         },
         {
-            name: 'Lyra',
+            name: 'Lyra', subtitle: 'the lyre',
             stars: [
-                { x: 0.50, y: 0.22 }, // Vega
-                { x: 0.38, y: 0.46 }, // Beta Lyrae
-                { x: 0.62, y: 0.46 }, // Gamma Lyrae
-                { x: 0.42, y: 0.60 }, // Delta Lyrae
-                { x: 0.58, y: 0.60 }, // Zeta Lyrae
+                { x: 0.50, y: 0.22, mag: 1 }, // Vega
+                { x: 0.38, y: 0.46, mag: 3 }, // Beta Lyrae
+                { x: 0.62, y: 0.46, mag: 3 }, // Gamma Lyrae
+                { x: 0.42, y: 0.60, mag: 4 }, // Delta Lyrae
+                { x: 0.58, y: 0.60, mag: 4 }, // Zeta Lyrae
             ],
             lines: [[0,1],[0,2],[1,3],[2,4],[3,4]]
         },
@@ -2212,9 +2212,19 @@ document.addEventListener('mousemove', (e) => {
     let constellIdx = Math.floor(Math.random() * CONSTELLATIONS.length);
     let constellationTimer = null;
     let cycleTimer = null;
+    let twinkleAnimId = null;
     let lastActivityReset = 0;
+    let savedParticleColors = [];
 
-    // ── Overlay canvas for lines + label ────────────────────────────────
+    // Subtle dark overlay — makes it feel like looking at a night sky
+    const dimEl = document.createElement('div');
+    dimEl.style.cssText = `
+        position: fixed; inset: 0; pointer-events: none; z-index: 9973;
+        background: rgba(0, 5, 20, 0); transition: background 4s ease;
+    `;
+    document.body.appendChild(dimEl);
+
+    // Canvas for animated star glows, lines, and label
     const cCanvas = document.createElement('canvas');
     cCanvas.style.cssText = `
         position: fixed; inset: 0; pointer-events: none; z-index: 9975;
@@ -2228,25 +2238,67 @@ document.addEventListener('mousemove', (e) => {
     window.addEventListener('resize', () => {
         cCanvas.width  = window.innerWidth;
         cCanvas.height = window.innerHeight;
-        if (constellationActive) renderLines(CONSTELLATIONS[constellIdx]);
     });
 
-    function toPixels(constellation) {
-        return constellation.stars.map(s => ({
-            x: s.x * window.innerWidth,
-            y: s.y * window.innerHeight,
-        }));
+    function toPixels(c) {
+        return c.stars.map(s => ({ x: s.x * window.innerWidth, y: s.y * window.innerHeight }));
     }
 
-    function renderLines(constellation) {
+    // Draw one twinkling star — three radial gradient layers + diffraction spikes
+    function drawStar(x, y, mag, twinkle) {
+        const base = [14, 10, 7, 5, 3.5][mag - 1] * (0.82 + 0.18 * twinkle);
+
+        // Wide atmospheric halo
+        const h = cCtx.createRadialGradient(x, y, 0, x, y, base * 4.5);
+        h.addColorStop(0,   `rgba(180, 220, 255, ${0.16 * twinkle})`);
+        h.addColorStop(0.5, `rgba(148, 200, 245, ${0.07 * twinkle})`);
+        h.addColorStop(1,   'rgba(100, 160, 225, 0)');
+        cCtx.beginPath(); cCtx.arc(x, y, base * 4.5, 0, Math.PI * 2);
+        cCtx.fillStyle = h; cCtx.fill();
+
+        // Mid glow
+        const m = cCtx.createRadialGradient(x, y, 0, x, y, base * 2);
+        m.addColorStop(0,   `rgba(210, 235, 255, ${0.58 * twinkle})`);
+        m.addColorStop(0.6, `rgba(170, 215, 255, ${0.22 * twinkle})`);
+        m.addColorStop(1,   'rgba(148, 200, 245, 0)');
+        cCtx.beginPath(); cCtx.arc(x, y, base * 2, 0, Math.PI * 2);
+        cCtx.fillStyle = m; cCtx.fill();
+
+        // Bright white core
+        const c = cCtx.createRadialGradient(x, y, 0, x, y, base);
+        c.addColorStop(0,   `rgba(255, 255, 255, ${0.95 * twinkle})`);
+        c.addColorStop(0.5, `rgba(220, 240, 255, ${0.68 * twinkle})`);
+        c.addColorStop(1,   'rgba(180, 215, 255, 0)');
+        cCtx.beginPath(); cCtx.arc(x, y, base, 0, Math.PI * 2);
+        cCtx.fillStyle = c; cCtx.fill();
+
+        // Diffraction spikes on bright stars (mag 1–2)
+        if (mag <= 2) {
+            const spike = base * (3.5 + 1.5 * twinkle);
+            cCtx.save();
+            cCtx.strokeStyle = `rgba(200, 230, 255, ${0.28 * twinkle})`;
+            cCtx.lineWidth = 0.7;
+            [[1, 0], [0, 1]].forEach(([dx, dy]) => {
+                cCtx.beginPath();
+                cCtx.moveTo(x - dx * spike, y - dy * spike);
+                cCtx.lineTo(x + dx * spike, y + dy * spike);
+                cCtx.stroke();
+            });
+            cCtx.restore();
+        }
+    }
+
+    // Full animated frame — lines, then stars on top, then label
+    function renderFrame(t, constellation) {
         cCtx.clearRect(0, 0, cCanvas.width, cCanvas.height);
         const pts = toPixels(constellation);
 
-        // Dashed connecting lines
+        // Connecting lines with soft glow
         cCtx.save();
-        cCtx.strokeStyle = 'rgba(148, 210, 230, 0.22)';
-        cCtx.lineWidth = 1;
-        cCtx.setLineDash([4, 7]);
+        cCtx.strokeStyle = 'rgba(148, 195, 235, 0.16)';
+        cCtx.lineWidth   = 0.9;
+        cCtx.shadowColor = 'rgba(148, 200, 235, 0.22)';
+        cCtx.shadowBlur  = 5;
         constellation.lines.forEach(([a, b]) => {
             cCtx.beginPath();
             cCtx.moveTo(pts[a].x, pts[a].y);
@@ -2255,46 +2307,79 @@ document.addEventListener('mousemove', (e) => {
         });
         cCtx.restore();
 
-        // Soft star halos
-        pts.forEach(({ x, y }) => {
-            const g = cCtx.createRadialGradient(x, y, 0, x, y, 7);
-            g.addColorStop(0, 'rgba(148, 210, 230, 0.55)');
-            g.addColorStop(1, 'rgba(148, 210, 230, 0)');
-            cCtx.beginPath();
-            cCtx.arc(x, y, 7, 0, Math.PI * 2);
-            cCtx.fillStyle = g;
-            cCtx.fill();
+        // Twinkling stars — each has a unique phase offset
+        pts.forEach(({ x, y }, i) => {
+            const mag     = constellation.stars[i].mag || 3;
+            const twinkle = 0.72 + 0.28 * Math.sin(t * 0.0013 + i * 1.73);
+            drawStar(x, y, mag, twinkle);
         });
 
-        // Label — centred below the lowest star
+        // Constellation name + subtitle below the lowest star
         const cx   = pts.reduce((s, p) => s + p.x, 0) / pts.length;
-        const botY = Math.max(...pts.map(p => p.y)) + 36;
-        cCtx.font      = "12px 'Fira Code', monospace";
-        cCtx.fillStyle = 'rgba(148, 210, 230, 0.42)';
+        const botY = Math.max(...pts.map(p => p.y)) + 44;
+        cCtx.save();
         cCtx.textAlign = 'center';
-        cCtx.fillText(constellation.name.toUpperCase(), cx, Math.min(botY, cCanvas.height - 12));
+        cCtx.shadowColor = 'rgba(148, 200, 235, 0.5)';
+        cCtx.shadowBlur  = 8;
+        cCtx.font      = "12px 'Fira Code', monospace";
+        cCtx.fillStyle = 'rgba(180, 220, 245, 0.55)';
+        cCtx.fillText(constellation.name.toUpperCase(), cx, Math.min(botY, cCanvas.height - 22));
+        cCtx.shadowBlur = 0;
+        cCtx.font      = "10px 'Fira Code', monospace";
+        cCtx.fillStyle = 'rgba(148, 200, 225, 0.28)';
+        cCtx.fillText(constellation.subtitle || '', cx, Math.min(botY + 18, cCanvas.height - 6));
+        cCtx.restore();
     }
 
+    function startAnimation(constellation) {
+        cancelAnimationFrame(twinkleAnimId);
+        function loop(t) {
+            if (!constellationActive) return;
+            renderFrame(t, constellation);
+            twinkleAnimId = requestAnimationFrame(loop);
+        }
+        twinkleAnimId = requestAnimationFrame(loop);
+    }
+
+    // Distribute particles by star magnitude — brighter stars get more, clustered tighter
     function assignParticles(constellation) {
-        const pts = toPixels(constellation);
-        [...particles]
-            .sort(() => Math.random() - 0.5)
-            .forEach((p, i) => {
-                const { x, y } = pts[i % pts.length];
-                p.fTarget    = { x: x + (Math.random() - 0.5) * 18, y: y + (Math.random() - 0.5) * 18 };
-                p.fLerpSpeed = 0.004 + Math.random() * 0.008; // slow drift
-            });
+        const pts     = toPixels(constellation);
+        const weights = constellation.stars.map(s => 6 - (s.mag || 3));
+        const totalW  = weights.reduce((a, b) => a + b, 0);
+
+        const assignments = [];
+        weights.forEach((w, i) => {
+            const n = Math.round(particles.length * w / totalW);
+            for (let j = 0; j < n; j++) assignments.push(i);
+        });
+        while (assignments.length < particles.length) assignments.push(Math.floor(Math.random() * pts.length));
+        assignments.length = particles.length;
+        assignments.sort(() => Math.random() - 0.5);
+
+        savedParticleColors = particles.map(p => p.color);
+        particles.forEach((p, i) => {
+            const { x, y }  = pts[assignments[i]];
+            const mag        = constellation.stars[assignments[i]].mag || 3;
+            const jitter     = [3, 6, 10, 14, 18][mag - 1] ?? 10;
+            p.fTarget        = { x: x + (Math.random() - 0.5) * jitter, y: y + (Math.random() - 0.5) * jitter };
+            p.fLerpSpeed     = 0.004 + Math.random() * 0.008;
+            const r = Math.random();
+            p.color = r > 0.7  ? 'rgba(220, 238, 255, 0.92)' :
+                      r > 0.35 ? 'rgba(200, 224, 255, 0.86)' :
+                                 'rgba(180, 212, 248, 0.80)';
+        });
     }
 
     function activate() {
         if (constellationActive) return;
         if (typeof eternalFActive !== 'undefined' && eternalFActive) return;
         constellationActive = true;
-        assignParticles(CONSTELLATIONS[constellIdx]);
-        // Lines fade in after particles have had time to drift into shape
+        const c = CONSTELLATIONS[constellIdx];
+        assignParticles(c);
+        dimEl.style.background = 'rgba(0, 5, 20, 0.38)';
         setTimeout(() => {
             if (!constellationActive) return;
-            renderLines(CONSTELLATIONS[constellIdx]);
+            startAnimation(c);
             cCanvas.style.opacity = '1';
         }, 4000);
         cycleTimer = setTimeout(cycleTo, 40000);
@@ -2304,12 +2389,14 @@ document.addEventListener('mousemove', (e) => {
         if (!constellationActive) return;
         constellIdx = (constellIdx + 1) % CONSTELLATIONS.length;
         cCanvas.style.opacity = '0';
+        cancelAnimationFrame(twinkleAnimId);
         setTimeout(() => {
             if (!constellationActive) return;
-            assignParticles(CONSTELLATIONS[constellIdx]);
+            const c = CONSTELLATIONS[constellIdx];
+            assignParticles(c);
             setTimeout(() => {
                 if (!constellationActive) return;
-                renderLines(CONSTELLATIONS[constellIdx]);
+                startAnimation(c);
                 cCanvas.style.opacity = '1';
                 cycleTimer = setTimeout(cycleTo, 40000);
             }, 3500);
@@ -2320,9 +2407,14 @@ document.addEventListener('mousemove', (e) => {
         if (!constellationActive) return;
         constellationActive = false;
         clearTimeout(cycleTimer);
+        cancelAnimationFrame(twinkleAnimId);
         cCanvas.style.opacity = '0';
+        dimEl.style.background = 'rgba(0, 5, 20, 0)';
         if (typeof eternalFActive === 'undefined' || !eternalFActive) {
-            particles.forEach(p => { p.fTarget = null; });
+            particles.forEach((p, i) => {
+                p.fTarget = null;
+                if (savedParticleColors[i]) p.color = savedParticleColors[i];
+            });
         }
     }
 
