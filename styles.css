@@ -1725,6 +1725,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .terminal-line { font-size: 0.82rem; line-height: 1.6; color: #94a3b8; }
 .terminal-line.term-pre { white-space: pre; }
+.term-rainbow {
+    background: linear-gradient(90deg, #fff 0%, #14b8a6 15%, #06b6d4 30%, #a855f7 45%, #ec4899 60%, #f97316 75%, #eab308 90%, #fff 100%);
+    background-size: 200% auto;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: shimmer 3s linear infinite;
+    font-weight: 700;
+}
 .terminal-line.term-prompt-echo { color: #e2e8f0; }
 .terminal-line.term-success { color: #22c55e; }
 .terminal-line.term-error { color: #ef4444; }
