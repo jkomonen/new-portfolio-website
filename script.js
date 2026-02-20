@@ -2409,6 +2409,7 @@ document.addEventListener('mousemove', (e) => {
         clearTimeout(cycleTimer);
         cancelAnimationFrame(twinkleAnimId);
         cCanvas.style.opacity = '0';
+        dimEl.style.transition = 'background 0.8s ease';
         dimEl.style.background = 'rgba(0, 5, 20, 0)';
         if (typeof eternalFActive === 'undefined' || !eternalFActive) {
             particles.forEach((p, i) => {
