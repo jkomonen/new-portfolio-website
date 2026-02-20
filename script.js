@@ -1057,10 +1057,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 document.querySelectorAll('.logo, .footer-logo').forEach(logo => {
     logo.addEventListener('click', (e) => {
         e.preventDefault();
-        window.scrollTo({
-            top: 0,
-            behavior: 'smooth'
-        });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     });
 });
 
@@ -1929,3 +1926,110 @@ document.addEventListener('keyup', (e) => {
     }
 });
 
+// ===== RAGE CLICK DETECTOR =====
+// 5+ clicks within ~60px and 2s → "hey, you good?" + calming particle shower
+const RAGE_RADIUS = 60;
+const RAGE_COUNT  = 10;
+const RAGE_WINDOW = 2000;
+
+let rageClicks = [];
+let rageCooldown = false;
+
+document.addEventListener('click', (e) => {
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (rageCooldown) return;
+
+    const now = Date.now();
+    const x = e.clientX, y = e.clientY;
+
+    // Keep only recent clicks near this point
+    rageClicks = rageClicks.filter(c =>
+        now - c.t < RAGE_WINDOW &&
+        Math.hypot(c.x - x, c.y - y) < RAGE_RADIUS
+    );
+    rageClicks.push({ x, y, t: now });
+
+    if (rageClicks.length >= RAGE_COUNT) {
+        rageClicks = [];
+        rageCooldown = true;
+        triggerRageResponse(x, y);
+        setTimeout(() => { rageCooldown = false; }, 4000);
+    }
+});
+
+function triggerRageResponse(x, y) {
+    // ── "hey, you good?" toast ──────────────────────────────
+    const toast = document.createElement('div');
+    toast.textContent = 'hey, you good? 💙';
+    toast.style.cssText = `
+        position: fixed;
+        left: ${Math.min(Math.max(x - 80, 12), window.innerWidth - 180)}px;
+        top:  ${y > 120 ? y - 56 : y + 24}px;
+        background: rgba(15, 25, 35, 0.92);
+        color: #94d2e6;
+        font-family: 'Fira Code', monospace;
+        font-size: 0.82rem;
+        padding: 8px 16px;
+        border-radius: 20px;
+        border: 1px solid rgba(148, 210, 230, 0.25);
+        box-shadow: 0 4px 24px rgba(6, 182, 212, 0.18);
+        z-index: 99995;
+        pointer-events: none;
+        opacity: 0;
+        transform: translateY(6px) scale(0.92);
+        transition: opacity 0.25s ease, transform 0.25s ease;
+        white-space: nowrap;
+    `;
+    document.body.appendChild(toast);
+    requestAnimationFrame(() => {
+        toast.style.opacity = '1';
+        toast.style.transform = 'translateY(0) scale(1)';
+    });
+    setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-6px) scale(0.92)';
+        setTimeout(() => toast.remove(), 300);
+    }, 2800);
+
+    // ── Calming particle shower ─────────────────────────────
+    const SHOWER_COLORS = ['#67e8f9', '#a5f3fc', '#7dd3fc', '#c4b5fd', '#a7f3d0', '#fde68a'];
+    const SHAPES = ['❄', '✦', '·', '✿', '○', '✶'];
+    const showerArea = 110; // px radius around click
+
+    for (let i = 0; i < 38; i++) {
+        setTimeout(() => {
+            const p = document.createElement('div');
+            const color  = SHOWER_COLORS[Math.floor(Math.random() * SHOWER_COLORS.length)];
+            const shape  = SHAPES[Math.floor(Math.random() * SHAPES.length)];
+            const size   = 8 + Math.random() * 14;
+            const startX = x + (Math.random() - 0.5) * showerArea;
+            const startY = y - 10 + Math.random() * 20;
+            const drift  = (Math.random() - 0.5) * 80;
+            const fall   = 180 + Math.random() * 160;
+            const dur    = 1600 + Math.random() * 900;
+
+            p.textContent = shape;
+            p.style.cssText = `
+                position: fixed;
+                left: ${startX}px;
+                top: ${startY}px;
+                font-size: ${size}px;
+                color: ${color};
+                pointer-events: none;
+                z-index: 99994;
+                opacity: 0;
+                text-shadow: 0 0 8px ${color}88;
+                user-select: none;
+            `;
+            document.body.appendChild(p);
+
+            p.animate([
+                { opacity: 0,   transform: `translate(0, 0) rotate(0deg) scale(0.6)` },
+                { opacity: 0.9, transform: `translate(${drift * 0.4}px, ${fall * 0.35}px) rotate(${Math.random()*120}deg) scale(1)`, offset: 0.2 },
+                { opacity: 0,   transform: `translate(${drift}px, ${fall}px) rotate(${Math.random()*360}deg) scale(0.5)` },
+            ], { duration: dur, easing: 'cubic-bezier(0.2, 0.8, 0.4, 1)' });
+
+            setTimeout(() => p.remove(), dur + 50);
+        }, i * 55);
+    }
+}
