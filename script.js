@@ -1583,7 +1583,7 @@ const termCommands = {
         termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n  <span class="term-rainbow">secrets</span>   – Secret interactions`, 'term-pre');
     },
     secrets() {
-        termPrint(`  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst`, 'term-pre');
+        termPrint(`  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst\n  • Type <span class="term-accent">reels</span> in this terminal`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1646,6 +1646,71 @@ const termCommands = {
     cd() { termPrint('There is no place like ~', 'term-accent'); },
     git() { termPrint('fatal: not a git repository (or any parent up to mount point /)'); },
     rm() { termPrint('rm: cannot remove \'/\': Permission denied', 'term-error'); }
+};
+
+// ===== REELS VIEWER =====
+// TODO: Replace shortcodes with your actual Instagram reel IDs
+// e.g. for https://www.instagram.com/reel/ABC123xyz/ the shortcode is ABC123xyz
+const REEL_SHORTCODES = [
+    'TODO_SHORTCODE_1',
+    'TODO_SHORTCODE_2',
+    'TODO_SHORTCODE_3',
+];
+
+let reelsIdx = 0;
+
+const reelsEl = document.createElement('div');
+reelsEl.className = 'reels-overlay';
+reelsEl.innerHTML = `
+    <button class="reels-close" aria-label="Close">✕</button>
+    <iframe class="reels-frame" id="reels-frame" src="" allowfullscreen></iframe>
+    <div class="reels-nav">
+        <button class="reels-btn" id="reels-prev">← prev</button>
+        <span class="reels-counter" id="reels-counter">1 / ${REEL_SHORTCODES.length}</span>
+        <button class="reels-btn" id="reels-next">next →</button>
+    </div>
+`;
+document.body.appendChild(reelsEl);
+
+const reelsFrame = document.getElementById('reels-frame');
+const reelsCounter = document.getElementById('reels-counter');
+
+function updateReel() {
+    reelsFrame.src = `https://www.instagram.com/reel/${REEL_SHORTCODES[reelsIdx]}/embed/`;
+    reelsCounter.textContent = `${reelsIdx + 1} / ${REEL_SHORTCODES.length}`;
+}
+
+function openReels() {
+    reelsIdx = 0;
+    updateReel();
+    reelsEl.classList.add('open');
+}
+
+function closeReels() {
+    reelsEl.classList.remove('open');
+    setTimeout(() => { reelsFrame.src = ''; }, 300);
+}
+
+reelsEl.querySelector('.reels-close').addEventListener('click', closeReels);
+document.getElementById('reels-prev').addEventListener('click', () => {
+    reelsIdx = (reelsIdx - 1 + REEL_SHORTCODES.length) % REEL_SHORTCODES.length;
+    updateReel();
+});
+document.getElementById('reels-next').addEventListener('click', () => {
+    reelsIdx = (reelsIdx + 1) % REEL_SHORTCODES.length;
+    updateReel();
+});
+
+document.addEventListener('keydown', (e) => {
+    if (!reelsEl.classList.contains('open')) return;
+    if (e.key === 'Escape') { closeReels(); }
+    if (e.key === 'ArrowLeft') { reelsIdx = (reelsIdx - 1 + REEL_SHORTCODES.length) % REEL_SHORTCODES.length; updateReel(); }
+    if (e.key === 'ArrowRight') { reelsIdx = (reelsIdx + 1) % REEL_SHORTCODES.length; updateReel(); }
+});
+
+termCommands.reels = function() {
+    termPrint(`Opening reels... <span class="term-accent">← →</span> to navigate, <span class="term-accent">Esc</span> to close`);
+    setTimeout(() => { closeTerminal(); openReels(); }, 400);
 };
 
 termInput.addEventListener('keydown', (e) => {

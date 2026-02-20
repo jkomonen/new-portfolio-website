@@ -1799,6 +1799,45 @@ h1, h2, h3, h4, h5, h6 {
     font-size: 0.7rem; line-height: 1.4;
 }
 
+/* ===== REELS VIEWER ===== */
+.reels-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.92);
+    z-index: 10001;
+    display: flex; align-items: center; justify-content: center; flex-direction: column;
+    gap: 1.2rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s ease;
+}
+.reels-overlay.open { opacity: 1; pointer-events: all; }
+.reels-frame {
+    border: none; border-radius: 14px;
+    width: 340px; height: 605px;
+    background: #000;
+    box-shadow: 0 0 60px rgba(0,0,0,0.8);
+}
+.reels-nav {
+    display: flex; align-items: center; gap: 1.5rem;
+    font-family: 'Fira Code', monospace; font-size: 0.82rem;
+}
+.reels-btn {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.16);
+    color: rgba(255,255,255,0.8); padding: 0.45rem 1.1rem;
+    border-radius: 6px; cursor: pointer;
+    font-family: 'Fira Code', monospace; font-size: 0.82rem;
+    transition: background 0.2s, border-color 0.2s;
+}
+.reels-btn:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.3); }
+.reels-counter { color: rgba(255,255,255,0.4); min-width: 48px; text-align: center; }
+.reels-close {
+    position: absolute; top: 1.4rem; right: 1.6rem;
+    background: none; border: none;
+    color: rgba(255,255,255,0.5); font-size: 1.3rem;
+    cursor: pointer; transition: color 0.2s; line-height: 1; padding: 0;
+}
+.reels-close:hover { color: #fff; }
+
 /* ===== MUSIC TOGGLE ===== */
 #music-toggle {
     position: fixed;
