@@ -821,6 +821,18 @@ class Particle {
             }
         }
 
+        // INK DRAWING ATTRACTION — drifts toward active neon strokes
+        if (activeDrawPoints && activeDrawPoints.length > 0) {
+            const dp = activeDrawPoints[Math.floor(Math.random() * Math.min(activeDrawPoints.length, 40))];
+            const ddx = dp.x - this.x, ddy = dp.y - this.y;
+            const dd = Math.sqrt(ddx * ddx + ddy * ddy);
+            if (dd < 200 && dd > 1) {
+                const f = (200 - dd) / 200 * 0.35;
+                this.x += (ddx / dd) * f;
+                this.y += (ddy / dd) * f;
+            }
+        }
+
         // BLACK HOLE ATTRACTION
         // Safety: if absorbed but black hole is gone, respawn immediately
         if (this.absorbed && !blackHole) {
@@ -2034,175 +2046,107 @@ function triggerRageResponse(x, y) {
     }
 }
 
-// ===== RETRO BOOT SEQUENCE =====
-// First-time visitors only (localStorage). Full-screen fake BIOS before the site fades in.
-(function initBootSequence() {
-    if (localStorage.getItem('joshuaOSBooted')) return;
-    localStorage.setItem('joshuaOSBooted', '1');
+// ===== MOUSE DRAWING CANVAS =====
+// Hold Shift + move mouse to paint glowing neon ink. Strokes fade slowly.
+// Background particles are attracted to wherever you've drawn.
 
-    let skipped = false;
+var activeDrawPoints = []; // var so Particle.update() can safely read it before this line executes
 
-    const screen = document.createElement('div');
-    screen.id = 'boot-screen';
-    screen.style.cssText = `
-        position: fixed; inset: 0; z-index: 999999;
-        background: #010801;
-        font-family: 'Fira Code', 'Courier New', monospace;
-        font-size: clamp(0.62rem, 1.4vw, 0.88rem);
-        line-height: 1.65;
-        padding: clamp(1.2rem, 4vw, 2.8rem) clamp(1.5rem, 5vw, 4rem);
-        overflow: hidden;
-        cursor: none;
-    `;
+const DRAW_NEONS = ['#14f0d0', '#c084fc', '#f472b6', '#fb923c', '#facc15', '#4ade80', '#38bdf8'];
+let drawColorIdx = 0;
+let lastDrawX = null, lastDrawY = null;
 
-    // CRT phosphor scanlines
-    const scanlines = document.createElement('div');
-    scanlines.style.cssText = `
-        position: absolute; inset: 0; pointer-events: none; z-index: 3;
-        background: repeating-linear-gradient(
-            0deg, transparent, transparent 2px,
-            rgba(0,0,0,0.15) 2px, rgba(0,0,0,0.15) 4px
-        );
-    `;
-    screen.appendChild(scanlines);
+const inkCanvas = document.createElement('canvas');
+inkCanvas.style.cssText = 'position:fixed;inset:0;z-index:9970;pointer-events:none;';
+inkCanvas.width  = window.innerWidth;
+inkCanvas.height = window.innerHeight;
+document.body.appendChild(inkCanvas);
+const inkCtx = inkCanvas.getContext('2d');
 
-    // Skip hint
-    const skipHint = document.createElement('div');
-    skipHint.style.cssText = `
-        position: absolute; bottom: 1.4rem; right: 2rem; z-index: 4;
-        color: #142014; font-family: 'Fira Code', monospace;
-        font-size: 0.62rem; letter-spacing: 0.04em; pointer-events: none;
-    `;
-    skipHint.textContent = 'click or press any key to skip';
-    screen.appendChild(skipHint);
+window.addEventListener('resize', () => {
+    inkCanvas.width  = window.innerWidth;
+    inkCanvas.height = window.innerHeight;
+});
 
-    const output = document.createElement('div');
-    output.style.cssText = 'position: relative; z-index: 2;';
-    screen.appendChild(output);
+// Cursor badge shown while drawing
+const inkHint = document.createElement('div');
+inkHint.style.cssText = `
+    position: fixed; pointer-events: none; z-index: 99993;
+    font-family: 'Fira Code', monospace; font-size: 0.64rem;
+    color: #fff; background: rgba(0,0,0,0.55);
+    padding: 2px 9px; border-radius: 12px;
+    display: none; white-space: nowrap;
+    transform: translate(14px, -22px);
+    border: 1px solid rgba(255,255,255,0.15);
+`;
+document.body.appendChild(inkHint);
 
-    document.body.appendChild(screen);
-    document.body.style.overflow = 'hidden';
+// Fade loop — destination-out gradually erases ink while keeping canvas transparent
+(function inkFadeLoop() {
+    inkCtx.globalCompositeOperation = 'destination-out';
+    inkCtx.fillStyle = 'rgba(0,0,0,0.003)';
+    inkCtx.fillRect(0, 0, inkCanvas.width, inkCanvas.height);
+    inkCtx.globalCompositeOperation = 'source-over';
 
-    // BIOS POST beep
-    try {
-        const ac = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ac.createOscillator(), g = ac.createGain();
-        osc.connect(g); g.connect(ac.destination);
-        osc.type = 'square'; osc.frequency.value = 880;
-        g.gain.setValueAtTime(0.07, ac.currentTime);
-        g.gain.exponentialRampToValueAtTime(0.001, ac.currentTime + 0.2);
-        osc.start(); osc.stop(ac.currentTime + 0.2);
-    } catch (_) {}
+    // Retire draw points older than 12 s so particle attraction winds down
+    const cutoff = Date.now() - 12000;
+    while (activeDrawPoints.length > 0 && activeDrawPoints[0].t < cutoff) activeDrawPoints.shift();
 
-    function addLine(text = '', color = '#00ff41', glow = true) {
-        const div = document.createElement('div');
-        div.style.color = color;
-        if (glow && color === '#00ff41') div.style.textShadow = '0 0 7px rgba(0,255,65,0.35)';
-        div.textContent = text;
-        output.appendChild(div);
-        return div;
-    }
-
-    function wait(ms) {
-        return new Promise(resolve => setTimeout(resolve, skipped ? 0 : ms));
-    }
-
-    function animateBar(label) {
-        return new Promise(resolve => {
-            if (skipped) { addLine(`  [${'█'.repeat(22)}] ${label.padEnd(26)} OK`, '#22c55e'); resolve(); return; }
-            const div = addLine('');
-            let i = 0;
-            const total = 22;
-            const iv = setInterval(() => {
-                if (skipped) { clearInterval(iv); resolve(); return; }
-                i++;
-                div.textContent = `  [${'█'.repeat(i)}${'░'.repeat(total - i)}] ${label}`;
-                div.style.color = '#00cc33';
-                div.style.textShadow = '0 0 5px rgba(0,204,51,0.25)';
-                if (i >= total) {
-                    clearInterval(iv);
-                    div.textContent = `  [${'█'.repeat(total)}] ${label.padEnd(26)} OK`;
-                    div.style.color = '#22c55e';
-                    div.style.textShadow = '0 0 8px rgba(34,197,94,0.4)';
-                    resolve();
-                }
-            }, 26);
-        });
-    }
-
-    function dismiss() {
-        if (skipped) return;
-        skipped = true;
-        document.removeEventListener('keydown', onKey);
-        screen.style.transition = 'opacity 0.65s ease';
-        screen.style.opacity = '0';
-        document.body.style.overflow = '';
-        setTimeout(() => screen.remove(), 700);
-    }
-
-    function onKey() { dismiss(); }
-    screen.addEventListener('click', dismiss);
-    document.addEventListener('keydown', onKey, { once: true });
-
-    async function runBoot() {
-        addLine('JOSHUA BIOS v1.0  © 1994 Joshua Systems Inc.  All Rights Reserved', '#a8b8a8', false);
-        await wait(120);
-        addLine('CPU: Creative Mind Pro @ 3.6GHz          L2 Cache: Unlimited', '#4a6a4a', false);
-        addLine('DRAM: Maximum Caffeine Speed              BIOS Build: 19941027', '#4a6a4a', false);
-        await wait(300);
-
-        addLine('');
-        addLine('Memory Test:', '#4a6a4a', false);
-        const ramLine = addLine('       0 KB', '#00ff41');
-        await new Promise(resolve => {
-            let kb = 0;
-            const iv = setInterval(() => {
-                if (skipped) { clearInterval(iv); ramLine.textContent = '  65536 KB OK'; resolve(); return; }
-                kb = Math.min(kb + 2048 + Math.floor(Math.random() * 1024), 65536);
-                ramLine.textContent = `  ${String(kb).padStart(6)} KB OK`;
-                if (kb >= 65536) { clearInterval(iv); resolve(); }
-            }, 35);
-        });
-        await wait(250);
-
-        addLine('');
-        addLine('──────────────────────────────────────────────────────────────────', '#1a2e1a', false);
-        addLine('  JOSHUA OS v1.0 — Loading personality modules...', '#d8e8d8', false);
-        addLine('──────────────────────────────────────────────────────────────────', '#1a2e1a', false);
-        addLine('');
-        await wait(180);
-
-        await animateBar('humor.dll');          await wait(55);
-        await animateBar('caffeine.sys');        await wait(55);
-        await animateBar('curiosity.exe');       await wait(55);
-        await animateBar('problem_solver.dll');  await wait(55);
-        await animateBar('empathy.mod');
-        await wait(160);
-
-        addLine('');
-        addLine('Mounting filesystems...', '#4a6a4a', false);
-        await wait(160);
-        addLine('  /dev/brain0 ..................................... OK', '#22c55e');
-        await wait(110);
-        addLine('  /dev/keyboard0 .................................. OK', '#22c55e');
-        await wait(110);
-        addLine('  /dev/coffee ...................................... CRITICAL', '#f97316', false);
-        await wait(320);
-
-        addLine('');
-        addLine('All systems nominal. 0 errors detected.', '#00ff41');
-        await wait(360);
-        addLine('Starting portfolio interface...', '#d8e8d8', false);
-        await wait(460);
-
-        // Blinking cursor then fade
-        const cur = addLine('_');
-        let vis = true;
-        const blinkIv = setInterval(() => { cur.style.opacity = (vis = !vis) ? '1' : '0'; }, 380);
-        await wait(820);
-        clearInterval(blinkIv);
-        dismiss();
-    }
-
-    runBoot();
+    requestAnimationFrame(inkFadeLoop);
 })();
+
+document.addEventListener('mousemove', (e) => {
+    inkHint.style.left = e.clientX + 'px';
+    inkHint.style.top  = e.clientY + 'px';
+
+    if (!e.shiftKey) {
+        if (lastDrawX !== null) {
+            // Stroke ended — next stroke gets a fresh color
+            drawColorIdx = (drawColorIdx + 1) % DRAW_NEONS.length;
+            lastDrawX = null;
+            lastDrawY = null;
+        }
+        inkHint.style.display = 'none';
+        return;
+    }
+
+    const col = DRAW_NEONS[drawColorIdx];
+    inkHint.style.display = 'block';
+    inkHint.style.color = col;
+    inkHint.style.borderColor = col + '55';
+    inkHint.textContent = '✏ drawing';
+
+    const x = e.clientX, y = e.clientY;
+
+    if (lastDrawX !== null) {
+        // Outer glow pass
+        inkCtx.beginPath();
+        inkCtx.moveTo(lastDrawX, lastDrawY);
+        inkCtx.lineTo(x, y);
+        inkCtx.strokeStyle = col;
+        inkCtx.lineWidth = 8;
+        inkCtx.lineCap = 'round';
+        inkCtx.lineJoin = 'round';
+        inkCtx.shadowColor = col;
+        inkCtx.shadowBlur = 24;
+        inkCtx.globalAlpha = 0.4;
+        inkCtx.stroke();
+
+        // Bright core pass
+        inkCtx.lineWidth = 2;
+        inkCtx.strokeStyle = '#ffffff';
+        inkCtx.shadowBlur = 8;
+        inkCtx.globalAlpha = 0.88;
+        inkCtx.stroke();
+
+        inkCtx.shadowBlur = 0;
+        inkCtx.globalAlpha = 1;
+
+        // Record midpoint for particle attraction
+        activeDrawPoints.push({ x: (lastDrawX + x) / 2, y: (lastDrawY + y) / 2, t: Date.now() });
+        if (activeDrawPoints.length > 500) activeDrawPoints.shift();
+    }
+
+    lastDrawX = x;
+    lastDrawY = y;
+});
