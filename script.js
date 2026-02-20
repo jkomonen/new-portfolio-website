@@ -1646,7 +1646,7 @@ const termCommands = {
 };
 
 termInput.addEventListener('keydown', (e) => {
-    if (e.key === '`') { e.stopPropagation(); return; }
+    if (e.key === '`' && termOpen) { e.preventDefault(); e.stopPropagation(); termHint.classList.remove('bouncing'); closeTerminal(); return; }
     if (e.key === 'ArrowUp') {
         e.preventDefault();
         termHistoryIdx = Math.min(termHistoryIdx + 1, termHistory.length - 1);
