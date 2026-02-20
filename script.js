@@ -1204,6 +1204,134 @@ if ('requestIdleCallback' in window) {
     setTimeout(preloadImages, 1000);
 }
 
+// ===== NYAN VIRUS =====
+function activateNyanMode() {
+    if (document.getElementById('nyan-sprite')) return;
+
+    // Mute existing music
+    const bgMusic = document.getElementById('bg-music');
+    const prevMuted = bgMusic.muted;
+    bgMusic.muted = true;
+
+    // --- 8-bit Nyan Cat melody via Web Audio ---
+    let nyanAc = null;
+    try {
+        nyanAc = new (window.AudioContext || window.webkitAudioContext)();
+        const ac = nyanAc;
+        const E = (60 / 140) / 2; // eighth note at 140 BPM
+        // Db major: Db5=554 Eb5=622 Bb4=466 Ab4=415 Gb4=370 Eb4=311
+        const melody = [
+            554,622,554,466, 554,622,554,466,
+            415,466,554,466, 415,370,
+            415,466,415,370, 311,370,
+            554,622,554,466, 554,622,554,466,
+            415,466,554,466, 415,370,
+            415,466,415,370, 311,370,
+        ];
+        let t = ac.currentTime + 0.05;
+        melody.forEach(f => {
+            const o = ac.createOscillator(), g = ac.createGain();
+            o.connect(g); g.connect(ac.destination);
+            o.type = 'square';
+            o.frequency.value = f;
+            g.gain.setValueAtTime(0.06, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + E * 0.88);
+            o.start(t); o.stop(t + E);
+            t += E;
+        });
+    } catch(e) {}
+
+    // --- VIRUS notification ---
+    const notif = document.createElement('div');
+    notif.className = 'virus-notification';
+    notif.innerHTML = `
+        <div style="font-size:1.8rem;flex-shrink:0">⚠️</div>
+        <div style="flex:1">
+            <div style="color:#ef4444;font-weight:700;font-size:0.82rem;letter-spacing:1px;margin-bottom:0.3rem">VIRUS DETECTED</div>
+            <div style="color:#64748b;font-size:0.72rem;margin-bottom:0.5rem">nyan.exe is spreading through portfolio...</div>
+            <div style="height:5px;background:#1a1a1a;border-radius:3px;overflow:hidden">
+                <div class="virus-progress"></div>
+            </div>
+            <div style="color:#334155;font-size:0.65rem;margin-top:0.3rem;font-family:'Fira Code',monospace">Containment: IMPOSSIBLE</div>
+        </div>
+    `;
+    document.body.appendChild(notif);
+    requestAnimationFrame(() => notif.classList.add('show'));
+
+    // --- Rainbow trail canvas ---
+    const trailCanvas = document.createElement('canvas');
+    trailCanvas.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;z-index:99985;pointer-events:none;transition:opacity 0.8s ease';
+    trailCanvas.width = window.innerWidth;
+    trailCanvas.height = window.innerHeight;
+    document.body.appendChild(trailCanvas);
+    const tCtx = trailCanvas.getContext('2d');
+
+    // --- Nyan Cat sprite ---
+    const sprite = document.createElement('div');
+    sprite.id = 'nyan-sprite';
+    sprite.style.cssText = 'position:fixed;z-index:99990;pointer-events:none;font-size:2.8rem;line-height:1;filter:drop-shadow(0 0 10px rgba(255,180,220,0.95))';
+    sprite.innerHTML = '<span style="letter-spacing:-0.25em">🍞🐱</span>';
+    document.body.appendChild(sprite);
+
+    // --- Particle colors → rainbow ---
+    const savedColors = particles.map(p => p.color);
+    const nyanPalette = ['rgba(255,80,140,1)','rgba(255,180,50,1)','rgba(255,255,70,1)','rgba(70,255,120,1)','rgba(70,140,255,1)','rgba(200,70,255,1)'];
+    particles.forEach(p => { p.color = nyanPalette[Math.floor(Math.random() * nyanPalette.length)]; });
+
+    // --- Animation ---
+    const STRIPE_COLORS = ['#ff0000','#ff7700','#ffff00','#00cc00','#0055ff','#8800cc'];
+    const STRIPE_H = 10;
+    const TRAIL_H = STRIPE_COLORS.length * STRIPE_H;
+    const BASE_Y = window.innerHeight * 0.45;
+    let catX = -100, frameId;
+
+    function animateNyan() {
+        catX += 7;
+        const bobY = BASE_Y + Math.sin(catX * 0.06) * 10;
+        sprite.style.left = catX + 'px';
+        sprite.style.top = (bobY - 24) + 'px';
+
+        // Draw rainbow trail
+        STRIPE_COLORS.forEach((color, i) => {
+            tCtx.fillStyle = color;
+            tCtx.fillRect(0, BASE_Y - TRAIL_H / 2 + i * STRIPE_H, catX - 30, STRIPE_H);
+        });
+
+        // Spawn stars/sparkles around the cat
+        if (Math.random() > 0.72) {
+            const star = document.createElement('div');
+            const icons = ['⭐','✨','🌟','💫','★'];
+            star.style.cssText = `position:fixed;font-size:${0.5 + Math.random() * 0.9}rem;left:${catX + (Math.random() - 0.5) * 90}px;top:${bobY + (Math.random() - 0.5) * 80}px;z-index:99988;pointer-events:none;animation:nyan-star-fade 0.9s ease-out forwards`;
+            star.textContent = icons[Math.floor(Math.random() * icons.length)];
+            document.body.appendChild(star);
+            setTimeout(() => star.remove(), 950);
+        }
+
+        if (catX < window.innerWidth + 120) {
+            frameId = requestAnimationFrame(animateNyan);
+        } else {
+            cleanup();
+        }
+    }
+    frameId = requestAnimationFrame(animateNyan);
+
+    function cleanup() {
+        cancelAnimationFrame(frameId);
+        if (nyanAc) { nyanAc.close(); nyanAc = null; }
+        trailCanvas.style.opacity = '0';
+        setTimeout(() => trailCanvas.remove(), 900);
+        sprite.style.transition = 'opacity 0.3s';
+        sprite.style.opacity = '0';
+        setTimeout(() => sprite.remove(), 400);
+        savedColors.forEach((c, i) => { if (particles[i]) particles[i].color = c; });
+        bgMusic.muted = prevMuted;
+        notif.classList.remove('show');
+        setTimeout(() => notif.remove(), 500);
+    }
+
+    setTimeout(() => { if (document.getElementById('nyan-sprite')) cleanup(); }, 15000);
+}
+
 // ===== FULL-SCREEN JAPANESE MATRIX RAIN =====
 let matrixRainActive = false;
 const matrixRain = (() => {
@@ -1397,6 +1525,11 @@ const termCommands = {
     date() { termPrint(new Date().toString()); },
     clear() { termBody.innerHTML = ''; },
     exit() { termPrint('Goodbye.', 'term-purple'); setTimeout(closeTerminal, 400); },
+    nyan() {
+        termPrint(`<span class="term-error">⚠</span> WARNING: executing <span style="color:#ff69b4">nyan.exe</span>...`);
+        termPrint(`<span style="color:#ff69b4">ニャン ニャン ニャン</span>`);
+        setTimeout(() => { activateNyanMode(); closeTerminal(); }, 600);
+    },
     sudo() { termPrint('Nice try. You are not in the sudoers file. This incident will be reported.', 'term-error'); },
     cd() { termPrint('There is no place like ~', 'term-accent'); },
     git() { termPrint('fatal: not a git repository (or any parent up to mount point /)'); },

@@ -1838,3 +1838,38 @@ h1, h2, h3, h4, h5, h6 {
     50%  { border-color: rgba(20,184,166,0.6); }
     100% { width: 500px; height: 500px; opacity: 0; }
 }
+
+/* ===== NYAN VIRUS ===== */
+.virus-notification {
+    position: fixed;
+    bottom: 5.5rem;
+    right: 1.5rem;
+    width: 295px;
+    background: rgba(8, 10, 10, 0.97);
+    border: 1px solid #ef4444;
+    border-radius: 10px;
+    padding: 0.9rem 1rem;
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+    z-index: 99999;
+    font-family: 'Fira Code', monospace;
+    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2), 0 8px 32px rgba(0, 0, 0, 0.7);
+    transform: translateX(150%);
+    transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.virus-notification.show { transform: translateX(0); }
+
+.virus-progress {
+    height: 5px;
+    width: 0;
+    background: linear-gradient(90deg, #ff0000, #ff7700, #ffff00, #00ff00, #0066ff, #8800ff);
+    border-radius: 3px;
+    animation: virus-fill 2.5s ease forwards;
+}
+@keyframes virus-fill { to { width: 100%; } }
+
+@keyframes nyan-star-fade {
+    0%   { opacity: 1; transform: scale(1) translateY(0); }
+    100% { opacity: 0; transform: scale(0.3) translateY(-25px); }
+}
