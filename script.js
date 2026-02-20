@@ -578,6 +578,95 @@ document.addEventListener('keydown', (e) => {
     }
 });
 
+function activateHackMode() {
+    // Full-screen data-exfil stream overlay
+    const stream = document.createElement('div');
+    stream.id = 'hack-stream';
+    stream.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        z-index: 99991; pointer-events: none;
+        font-family: 'Fira Code', monospace; font-size: 0.72rem; line-height: 1.5;
+        color: #00ff41; overflow: hidden;
+        background: rgba(0,0,0,0.92);
+        padding: 1.2rem 1.5rem;
+        opacity: 0; transition: opacity 0.15s ease;
+    `;
+    document.body.appendChild(stream);
+    requestAnimationFrame(() => { stream.style.opacity = '1'; });
+
+    function randHex(len) {
+        return Array.from({length: len}, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    }
+    function randIP() {
+        return Array.from({length: 4}, () => Math.floor(Math.random() * 256)).join('.');
+    }
+    const filePaths = ['/etc/passwd', '/root/.ssh/id_rsa', '/var/log/auth.log', '/home/admin/.bashrc',
+                       '/proc/net/tcp', '/sys/kernel/security', '/etc/shadow', '/var/www/html/.env'];
+    const actions   = ['READING', 'COPYING', 'INJECTING', 'SCANNING', 'BYPASSING', 'EXTRACTING', 'ESCALATING'];
+
+    // Rapid scrolling lines
+    const lineInterval = setInterval(() => {
+        const line = document.createElement('div');
+        const type = Math.floor(Math.random() * 5);
+        if (type === 0) {
+            line.innerHTML = `<span style="color:#444">[${Date.now()}]</span> <span style="color:#00ff41">${actions[Math.floor(Math.random()*actions.length)]}</span> ${filePaths[Math.floor(Math.random()*filePaths.length)]}`;
+        } else if (type === 1) {
+            line.innerHTML = `<span style="color:#0af">0x${randHex(8)}</span> &rarr; <span style="color:#f60">0x${randHex(8)}</span>&nbsp;&nbsp;${randHex(32)}`;
+        } else if (type === 2) {
+            line.innerHTML = `<span style="color:#f44">FIREWALL BYPASSED</span>&nbsp;&nbsp;${randIP()} <span style="color:#444">&rarr;</span> ${randIP()}`;
+        } else if (type === 3) {
+            line.innerHTML = `<span style="color:#ff0">PRIVILEGE ESCALATION</span>&nbsp;&nbsp;uid=0(root) gid=0(root)`;
+        } else {
+            line.style.color = '#1a3a1a';
+            line.textContent = randHex(72);
+        }
+        stream.appendChild(line);
+        // Keep only the last ~40 lines so it feels like a scrolling feed
+        while (stream.children.length > 40) stream.removeChild(stream.firstChild);
+    }, 70);
+
+    // Body glitch — occasional inversion flash and horizontal jitter
+    let glitchTick = 0;
+    const glitchInterval = setInterval(() => {
+        glitchTick++;
+        if (glitchTick % 4 === 0) {
+            document.body.style.filter = 'invert(1)';
+            setTimeout(() => { document.body.style.filter = ''; }, 35);
+        } else if (glitchTick % 9 === 0) {
+            document.body.style.transform = `translateX(${(Math.random() - 0.5) * 10}px)`;
+            setTimeout(() => { document.body.style.transform = ''; }, 55);
+        }
+    }, 180);
+
+    // "TRACE COMPLETE" endscreen after 4 s
+    setTimeout(() => {
+        clearInterval(lineInterval);
+        stream.innerHTML = '';
+        const final = document.createElement('div');
+        final.style.cssText = `
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center; color: #00ff41;
+            font-family: 'Fira Code', monospace;
+            font-size: 2rem; font-weight: bold;
+            letter-spacing: 0.2em;
+            text-shadow: 0 0 20px #00ff41, 0 0 50px #00cc33;
+        `;
+        final.innerHTML = `TRACE COMPLETE<br><span style="font-size:0.85rem;color:#555;letter-spacing:0.35em;text-shadow:none">connection terminated</span>`;
+        stream.appendChild(final);
+    }, 4000);
+
+    // Full cleanup after 5.2 s
+    setTimeout(() => {
+        clearInterval(lineInterval);
+        clearInterval(glitchInterval);
+        document.body.style.filter = '';
+        document.body.style.transform = '';
+        stream.style.opacity = '0';
+        setTimeout(() => stream.remove(), 300);
+    }, 5200);
+}
+
 function activateUltraMode() {
     // MEGA CONFETTI EXPLOSION
     for (let i = 0; i < 10; i++) {
@@ -1480,7 +1569,7 @@ function termPrint(html, cls) {
 
 const termCommands = {
     help() {
-        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n\nEaster eggs:\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal`, 'term-pre');
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n\nEaster eggs:\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1514,7 +1603,7 @@ const termCommands = {
                 setTimeout(() => {
                     termPrint('ACCESS GRANTED. Welcome to the mainframe.', 'term-success');
                     closeTerminal();
-                    activateUltraMode();
+                    activateHackMode();
                 }, 300);
             }
         }, 120);
