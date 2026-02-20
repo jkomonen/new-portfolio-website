@@ -1655,6 +1655,8 @@ const BRAINROT_VIDEOS = [
     { id: 'n_Dv4JMiwK8', label: 'Minecraft Parkour (1h 20m)' },
     { id: 'intRX7BRA90', label: 'Minecraft Parkour 60fps (1h 22m)' },
     { id: 'MgWbntKZ3ds', label: 'Minecraft Parkour – Glowing Ore' },
+    { id: 'kZj92Ie6nxQ', label: 'Family Guy Compilation' },
+    { id: 'AmvfIRwFcO0', label: 'Family Guy YTP' },
 ];
 
 let reelsIdx = 0;
