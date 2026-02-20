@@ -4,22 +4,21 @@ aurora.className = 'aurora';
 document.body.appendChild(aurora);
 
 // ===== MATRIX CODE RAIN =====
-const matrixCanvas = document.createElement('canvas');
-matrixCanvas.id = 'matrix-canvas';
-document.body.appendChild(matrixCanvas);
+const matrixCanvas = document.getElementById('matrix-canvas');
 const matrixCtx = matrixCanvas.getContext('2d');
+
+const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンァィゥェォッャュョヴ';
+const fontSize = 14;
+let columns, drops;
 
 function resizeMatrix() {
     matrixCanvas.width = window.innerWidth;
     matrixCanvas.height = window.innerHeight;
+    columns = Math.floor(matrixCanvas.width / fontSize);
+    drops = Array(columns).fill(1);
 }
 resizeMatrix();
 window.addEventListener('resize', resizeMatrix);
-
-const matrixChars = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789ABCDEF<>/{}[]();:=+-*&|!?#$%@~`^';
-const fontSize = 14;
-let columns = Math.floor(matrixCanvas.width / fontSize);
-let drops = Array(columns).fill(1);
 
 function drawMatrix() {
     matrixCtx.fillStyle = 'rgba(10, 15, 15, 0.05)';
@@ -645,9 +644,8 @@ function activateUltraMode() {
 // Black hole state (declared here so Particle.update() can reference it safely)
 let blackHole = null;
 let isHolding = false;
-const BH_BASE_RADIUS = 96;       // base radius in px (matches 192px CSS diameter)
-const BH_GROWTH_PER_PARTICLE = 1; // px of radius growth per absorbed particle
-const BH_MAX_RADIUS = 200;        // caps at 400px diameter
+const BH_BASE_RADIUS = 40;         // base radius in px (matches 80px CSS diameter)
+const BH_GROWTH_PER_PARTICLE = 0.2; // px of radius growth per absorbed particle
 
 // ===== Particle Physics Background =====
 const canvas = document.getElementById('particle-canvas');
@@ -688,11 +686,11 @@ class Particle {
         this.vy = (Math.random() - 0.5) * 0.5;
         // Teal/cyan color palette
         const colors = [
-            'rgba(20, 184, 166, 0.8)',   // teal
-            'rgba(6, 182, 212, 0.7)',    // cyan
-            'rgba(13, 148, 136, 0.6)',   // darker teal
-            'rgba(94, 234, 212, 0.5)',   // light teal
-            'rgba(103, 232, 249, 0.4)'   // light cyan
+            'rgba(20, 184, 166, 1.0)',   // teal
+            'rgba(6, 182, 212, 0.95)',   // cyan
+            'rgba(45, 212, 191, 0.9)',   // mid teal
+            'rgba(94, 234, 212, 0.9)',   // light teal
+            'rgba(103, 232, 249, 0.85)' // light cyan
         ];
         this.color = colors[Math.floor(Math.random() * colors.length)];
     }
@@ -761,7 +759,7 @@ class Particle {
             }
 
             // Event horizon: absorb particle when close enough
-            if (bhDist < blackHole.radius * 0.15) {
+            if (bhDist < blackHole.radius * 0.3) {
                 this.absorbed = true;
                 this.regenTimer = 90 + Math.floor(Math.random() * 60); // ~1.5–2.5s at 60fps
                 this.x = blackHole.x;
@@ -769,7 +767,7 @@ class Particle {
                 this.baseX = blackHole.x;
                 this.baseY = blackHole.y;
                 blackHole.absorbedCount++;
-                blackHole.radius = Math.min(BH_BASE_RADIUS + blackHole.absorbedCount * BH_GROWTH_PER_PARTICLE, BH_MAX_RADIUS);
+                blackHole.radius = BH_BASE_RADIUS + blackHole.absorbedCount * BH_GROWTH_PER_PARTICLE;
                 if (bhEl) {
                     const diam = blackHole.radius * 2;
                     bhEl.style.width = diam + 'px';
@@ -845,7 +843,8 @@ function connectParticles() {
 
 // Animation loop
 function animateParticles() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = '#182828';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     for (let particle of particles) {
         particle.update();
@@ -1078,7 +1077,7 @@ contactForm.addEventListener('submit', function(e) {
     const message = formData.get('message');
 
     // Create mailto link as fallback
-    const mailtoLink = `mailto:joshua.komonen@email.com?subject=Portfolio Contact from ${encodeURIComponent(name)}&body=${encodeURIComponent(`From: ${name}\nEmail: ${email}\n\n${message}`)}`;
+    const mailtoLink = `mailto:joshkomonen@gmail.com?subject=Portfolio Contact from ${encodeURIComponent(name)}&body=${encodeURIComponent(`From: ${name}\nEmail: ${email}\n\n${message}`)}`;
 
     // Show success message
     const btn = this.querySelector('button[type="submit"]');
@@ -1205,14 +1204,81 @@ if ('requestIdleCallback' in window) {
     setTimeout(preloadImages, 1000);
 }
 
+// ===== FULL-SCREEN JAPANESE MATRIX RAIN =====
+let matrixRainActive = false;
+const matrixRain = (() => {
+    const kana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンァィゥェォッャュョヴ';
+    const fs = 16;
+    let canvas, ctx, cols, drops, speeds, animId, ready = false;
+
+    function resize() {
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        cols = Math.floor(window.innerWidth / fs);
+        drops = Array.from({ length: cols }, () => -(Math.random() * 40));
+        speeds = Array.from({ length: cols }, () => 0.4 + Math.random() * 0.7);
+    }
+
+    function draw() {
+        if (!matrixRainActive) return;
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.font = `bold ${fs}px monospace`;
+        for (let i = 0; i < cols; i++) {
+            const char = kana[Math.floor(Math.random() * kana.length)];
+            const x = i * fs;
+            const y = drops[i] * fs;
+            const r = Math.random();
+            ctx.fillStyle = r > 0.98 ? '#fff' : r > 0.65 ? '#00ff41' : '#009921';
+            if (y > 0) ctx.fillText(char, x, y);
+            drops[i] += speeds[i];
+            if (drops[i] * fs > canvas.height && Math.random() > 0.975) {
+                drops[i] = -(Math.random() * 30);
+                speeds[i] = 0.4 + Math.random() * 0.7;
+            }
+        }
+        animId = requestAnimationFrame(draw);
+    }
+
+    function init() {
+        canvas = document.createElement('canvas');
+        Object.assign(canvas.style, {
+            position: 'fixed', top: '0', left: '0',
+            width: '100%', height: '100%',
+            zIndex: '9980', pointerEvents: 'none',
+            opacity: '0', transition: 'opacity 0.5s ease'
+        });
+        document.body.appendChild(canvas);
+        ctx = canvas.getContext('2d');
+        resize();
+        window.addEventListener('resize', resize);
+        ready = true;
+    }
+
+    return {
+        toggle() {
+            if (!ready) init();
+            matrixRainActive = !matrixRainActive;
+            canvas.style.opacity = matrixRainActive ? '1' : '0';
+            if (matrixRainActive) {
+                draw();
+            } else {
+                cancelAnimationFrame(animId);
+                setTimeout(() => { if (!matrixRainActive) ctx.clearRect(0, 0, canvas.width, canvas.height); }, 600);
+            }
+            return matrixRainActive;
+        },
+        isActive() { return matrixRainActive; }
+    };
+})();
+
 // ===== HIDDEN TERMINAL (press `) =====
 const terminalEl = document.createElement('div');
 terminalEl.className = 'terminal-overlay';
 terminalEl.innerHTML = `
     <div class="terminal-header">
-        <div class="terminal-dots"><span></span><span></span><span></span></div>
+        <div class="terminal-dots"><span class="dot-red"></span><span class="dot-yellow"></span><span class="dot-green"></span></div>
         <span class="terminal-title">jkomonen@portfolio:~</span>
-        <button class="terminal-close-btn">✕</button>
     </div>
     <div class="terminal-body" id="terminal-body">
         <div class="terminal-line">Welcome to Joshua's terminal. Type <span class="term-accent">help</span> for available commands.</div>
@@ -1232,12 +1298,13 @@ let termHistoryIdx = -1;
 
 function openTerminal() {
     terminalEl.classList.add('open');
+    terminalEl.classList.remove('minimized');
     termOpen = true;
     setTimeout(() => termInput.focus(), 420);
 }
 
 function closeTerminal() {
-    terminalEl.classList.remove('open');
+    terminalEl.classList.remove('open', 'minimized', 'maximized');
     termOpen = false;
 }
 
@@ -1248,10 +1315,23 @@ document.addEventListener('keydown', (e) => {
         e.preventDefault();
         termOpen ? closeTerminal() : openTerminal();
     }
-    if (e.key === 'Escape' && termOpen) closeTerminal();
+    if (e.key === 'Escape') {
+        if (termOpen) closeTerminal();
+        if (matrixRainActive) matrixRain.toggle();
+    }
 });
 
-terminalEl.querySelector('.terminal-close-btn').addEventListener('click', closeTerminal);
+terminalEl.querySelector('.dot-red').addEventListener('click', closeTerminal);
+terminalEl.querySelector('.dot-yellow').addEventListener('click', () => {
+    if (!termOpen) return;
+    terminalEl.classList.toggle('minimized');
+    if (!terminalEl.classList.contains('minimized')) setTimeout(() => termInput.focus(), 50);
+});
+terminalEl.querySelector('.dot-green').addEventListener('click', () => {
+    if (!termOpen) return;
+    terminalEl.classList.toggle('maximized');
+    setTimeout(() => termInput.focus(), 50);
+});
 
 function termPrint(html, cls) {
     const line = document.createElement('div');
@@ -1263,7 +1343,7 @@ function termPrint(html, cls) {
 
 const termCommands = {
     help() {
-        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Toggle matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal`, 'term-pre');
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1276,7 +1356,7 @@ const termCommands = {
         termPrint(`→ <a href="#projects" class="term-link" onclick="closeTerminal()">View all projects ↗</a>`);
     },
     contact() {
-        termPrint(`Contact:\n  Email    <span class="term-accent">joshua.komonen@email.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/jkomonen</span>`, 'term-pre');
+        termPrint(`Contact:\n  Email    <span class="term-accent">joshkomonen@gmail.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/joshuakomonen</span>`, 'term-pre');
         termPrint(`→ <a href="#contact" class="term-link" onclick="closeTerminal()">Send a message ↗</a>`);
     },
     hack() {
@@ -1303,11 +1383,13 @@ const termCommands = {
         }, 120);
     },
     matrix() {
-        const mc = document.getElementById('matrix-canvas');
-        if (!mc) return;
-        const on = parseFloat(mc.style.opacity || '0.15') > 0;
-        mc.style.opacity = on ? '0' : '0.15';
-        termPrint(`Matrix rain: ${on ? '<span class="term-error">OFF</span>' : '<span class="term-success">ON</span>'}`);
+        const on = matrixRain.toggle();
+        if (on) {
+            termPrint(`<span class="term-success">▓▒░ MATRIX ENGAGED ░▒▓</span>`, 'term-pre');
+            termPrint(`Japanese rain active. Type <span class="term-accent">matrix</span> again or press <span class="term-accent">Esc</span> to exit.`);
+        } else {
+            termPrint(`Matrix rain: <span class="term-error">DISENGAGED</span>`);
+        }
     },
     ls() {
         termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\ndrwxr-xr-x  <span class="term-accent">contact/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
@@ -1428,5 +1510,31 @@ document.addEventListener('mouseup', () => {
     }
     isHolding = false;
     blackHole = null;
+});
+
+// ===== BACKGROUND MUSIC =====
+const bgMusic = document.getElementById('bg-music');
+const musicToggle = document.getElementById('music-toggle');
+let musicStarted = false;
+
+function startMusic() {
+    if (!musicStarted) {
+        bgMusic.volume = 0.4;
+        bgMusic.play().catch(() => {});
+        musicStarted = true;
+    }
+}
+
+// Start on first user interaction (browser autoplay policy)
+document.addEventListener('click', startMusic, { once: true });
+document.addEventListener('keydown', startMusic, { once: true });
+
+musicToggle.addEventListener('click', (e) => {
+    e.stopPropagation();
+    startMusic();
+    bgMusic.muted = !bgMusic.muted;
+    musicToggle.classList.toggle('muted', bgMusic.muted);
+    musicToggle.textContent = bgMusic.muted ? '🔇' : '🔊';
+    musicToggle.title = bgMusic.muted ? 'Unmute music' : 'Mute music';
 });
 
