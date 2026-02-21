@@ -1650,12 +1650,26 @@ const termCommands = {
 
 // ===== BRAINROT VIEWER =====
 const BRAINROT_VIDEOS = [
-    { id: 'zZ7AimPACzc', label: 'Subway Surfers (1 hour)' },
-    { id: '3jEpiw87n5U', label: 'Subway Surfers gameplay' },
-    { id: 'n_Dv4JMiwK8', label: 'Minecraft Parkour (1h 20m)' },
-    { id: 'intRX7BRA90', label: 'Minecraft Parkour 60fps (1h 22m)' },
-    { id: 'MgWbntKZ3ds', label: 'Minecraft Parkour – Glowing Ore' },
-
+    { id: 'cKMlkOCii1E', label: 'Subway Surfers – Star Trail' },
+    { id: 'HVLApWoJufI', label: 'Geometry Dash MLG' },
+    { id: 'x-Q_0EoZW_I', label: 'DIY Slime Compilation' },
+    { id: 'uSDaTF1HJ3A', label: 'Minecraft X-Run Parkour' },
+    { id: 'Y7ixXVcPBHM', label: 'Temple Run 2 – Real Life' },
+    { id: '7ghSziUQnhs', label: 'Subway Surfers 4K' },
+    { id: 'tfK_nYOB6D8', label: 'Geometry Dash – Hexagon Force' },
+    { id: 'eZHI7JjOclw', label: 'Watermelon Cutting ASMR' },
+    { id: 'lNiXekn5hAI', label: 'Minecraft Lifesize Monopoly Parkour' },
+    { id: 'fuQf-iGCmKA', label: 'Temple Run 2 4K' },
+    { id: 'Q_HAKxCWztg', label: 'Subway Surfers #shorts' },
+    { id: 'Wp-TAIPC7GU', label: 'Geometry Dash – Cataclysm' },
+    { id: 'HDkCwjd5xwM', label: 'Satisfying Craft Compilation' },
+    { id: 'RSVqKKLtGUo', label: 'Minecraft Parkour – The Return' },
+    { id: 'GD7tw7yXJmU', label: 'Photon Rush Gameplay' },
+    { id: 'SPI8PYxOs68', label: 'Subway Surfers Vancouver 2024' },
+    { id: 'Ne4ZSuLlDwI', label: 'Geometry Dash – Can\'t Let Go' },
+    { id: 'HMaija3iB2U', label: 'Edible Soap ASMR' },
+    { id: 'TBmF2jG9g3Q', label: 'Minecraft Speedrun' },
+    { id: 'Nbaw_6oRFW4', label: 'Temple Run in Minecraft' },
 ];
 
 let reelsIdx = 0;
