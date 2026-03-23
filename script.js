@@ -150,49 +150,9 @@ document.addEventListener('mousemove', (e) => {
     setTimeout(() => code.remove(), 1000);
 });
 
-// ===== CUSTOM CURSOR FOR HERO ELEMENTS =====
-const customCursor = document.createElement('div');
-customCursor.className = 'custom-cursor';
-document.body.appendChild(customCursor);
-
-let cursorVisible = false;
-let heroMouseX = 0, heroMouseY = 0;
-
-// Track mouse position for custom cursor
-document.addEventListener('mousemove', (e) => {
-    heroMouseX = e.clientX;
-    heroMouseY = e.clientY;
-    if (cursorVisible) {
-        customCursor.style.left = heroMouseX + 'px';
-        customCursor.style.top = heroMouseY + 'px';
-    }
-});
-
-// Use event delegation on the hero section for better coverage
+// ===== LIGHTNING ON CLICK FOR HERO BUTTONS =====
 const heroSection = document.querySelector('.hero');
 if (heroSection) {
-    heroSection.addEventListener('mouseover', (e) => {
-        const target = e.target.closest('.hero-cta a, .hero-cta .btn, .hero-socials a');
-        if (target) {
-            cursorVisible = true;
-            customCursor.classList.add('visible');
-            customCursor.style.left = heroMouseX + 'px';
-            customCursor.style.top = heroMouseY + 'px';
-        }
-    });
-
-    heroSection.addEventListener('mouseout', (e) => {
-        const target = e.target.closest('.hero-cta a, .hero-cta .btn, .hero-socials a');
-        const relatedTarget = e.relatedTarget ? e.relatedTarget.closest('.hero-cta a, .hero-cta .btn, .hero-socials a') : null;
-
-        // Only hide if we're leaving a button and not entering another button
-        if (target && !relatedTarget) {
-            cursorVisible = false;
-            customCursor.classList.remove('visible');
-        }
-    });
-
-    // Lightning on click for hero buttons
     heroSection.addEventListener('click', (e) => {
         const target = e.target.closest('.hero-cta a, .hero-cta .btn, .hero-socials a');
         if (target) {
@@ -1095,7 +1055,7 @@ const observer = new IntersectionObserver((entries) => {
 }, observerOptions);
 
 // Observe elements
-document.querySelectorAll('.skill-category, .project-card, .timeline-item, .about-stats, .contact-method').forEach(el => {
+document.querySelectorAll('.skill-category, .project-card, .timeline-item, .about-stats').forEach(el => {
     el.style.opacity = '0';
     el.style.transform = 'translateY(30px)';
     el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
@@ -1105,7 +1065,7 @@ document.querySelectorAll('.skill-category, .project-card, .timeline-item, .abou
 // Add visible class styles
 const style = document.createElement('style');
 style.textContent = `
-    .skill-category.visible, .project-card.visible, .timeline-item.visible, .about-stats.visible, .contact-method.visible {
+    .skill-category.visible, .project-card.visible, .timeline-item.visible, .about-stats.visible {
         opacity: 1 !important;
         transform: translateY(0) !important;
     }
@@ -1171,42 +1131,6 @@ navActiveStyle.textContent = `
     }
 `;
 document.head.appendChild(navActiveStyle);
-
-// ===== Contact Form Handling =====
-const contactForm = document.getElementById('contact-form');
-
-contactForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-
-    const formData = new FormData(this);
-    const name = formData.get('name');
-    const email = formData.get('email');
-    const message = formData.get('message');
-
-    // Create mailto link as fallback
-    const mailtoLink = `mailto:joshkomonen@gmail.com?subject=Portfolio Contact from ${encodeURIComponent(name)}&body=${encodeURIComponent(`From: ${name}\nEmail: ${email}\n\n${message}`)}`;
-
-    // Show success message
-    const btn = this.querySelector('button[type="submit"]');
-    const originalText = btn.innerHTML;
-    btn.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-            <polyline points="20 6 9 17 4 12"></polyline>
-        </svg>
-        Message Ready!
-    `;
-    btn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
-
-    // Open email client
-    window.location.href = mailtoLink;
-
-    // Reset form and button after delay
-    setTimeout(() => {
-        btn.innerHTML = originalText;
-        btn.style.background = '';
-        this.reset();
-    }, 3000);
-});
 
 // ===== Parallax Effect for Hero Orbs =====
 const orbs = document.querySelectorAll('.gradient-orb');
@@ -1583,7 +1507,7 @@ const termCommands = {
         termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n  <span class="term-rainbow">secrets</span>   – Secret interactions`, 'term-pre');
     },
     secrets() {
-        termPrint(`  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">nyan</span> in this terminal\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • Leave the page idle for 30 seconds\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Double-click anywhere for a glitch burst\n  • Type <span class="term-accent">brainrot</span> in this terminal`, 'term-pre');
+        termPrint(`  • Type <span class="term-accent">nyan</span> in this terminal\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Double-click anywhere for a glitch burst\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">brainrot</span> in this terminal\n  • Leave the page idle for 30 seconds`, 'term-pre');
     },
     whoami() {
         termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
@@ -1597,7 +1521,11 @@ const termCommands = {
     },
     contact() {
         termPrint(`Contact:\n  Email    <span class="term-accent">joshkomonen@gmail.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/joshuakomonen</span>`, 'term-pre');
-        termPrint(`→ <a href="#contact" class="term-link" onclick="closeTerminal()">Send a message ↗</a>`);
+        termPrint(`<a href="mailto:joshkomonen@gmail.com" class="term-link">Send an email</a>`);
+    },
+    contact() {
+        termPrint(`Contact:\n  Email    <span class="term-accent">joshkomonen@gmail.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/joshuakomonen</span>`, 'term-pre');
+        termPrint(`<a href="mailto:joshkomonen@gmail.com" class="term-link">Send an email</a>`);
     },
     hack() {
         termPrint('Initiating hack sequence...', 'term-purple');
@@ -1633,6 +1561,9 @@ const termCommands = {
     },
     ls() {
         termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\ndrwxr-xr-x  <span class="term-accent">contact/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
+    },
+    ls() {
+        termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
     },
     date() { termPrint(new Date().toString()); },
     clear() { termBody.innerHTML = ''; },
@@ -1853,7 +1784,7 @@ function spawnBhTotal(x, y, total) {
 
 document.addEventListener('mousedown', (e) => {
     if (e.button !== 0) return;
-    if (e.target.closest('a, button, input, textarea, .terminal-overlay, .navbar, .contact-form, .project-link')) return;
+    if (e.target.closest('a, button, input, textarea, .terminal-overlay, .navbar, .project-link')) return;
     bhHoldTimer = setTimeout(() => {
         isHolding = true;
         // Reset any previously absorbed particles before creating new black hole
