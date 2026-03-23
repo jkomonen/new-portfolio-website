@@ -47,6 +47,34 @@ body {
     color: var(--text-primary);
 }
 
+html.blackhole-active,
+html.blackhole-active body,
+body.blackhole-active,
+body.blackhole-active *,
+html.blackhole-cooldown,
+html.blackhole-cooldown body,
+body.blackhole-cooldown,
+body.blackhole-cooldown * {
+    user-select: none !important;
+    -webkit-user-select: none !important;
+}
+
+body.blackhole-active *:not(.black-hole-vortex):not(.bh-shockwave) {
+    pointer-events: none !important;
+}
+
+body.blackhole-active {
+    cursor: grabbing !important;
+}
+
+body.blackhole-cooldown {
+    cursor: default !important;
+}
+
+body.blackhole-active ::selection {
+    background: transparent;
+}
+
 /* ===== Custom Cursor - Code Brackets ===== */
 .cursor, .cursor-follower {
     display: none;
@@ -594,6 +622,19 @@ h1, h2, h3, h4, h5, h6 {
     animation: shimmer 3s linear infinite, glitch 0.3s ease infinite;
 }
 
+body.blackhole-active .hero-name:hover,
+body.blackhole-cooldown .hero-name:hover {
+    animation: none;
+}
+
+body.blackhole-active .hero-name,
+body.blackhole-cooldown .hero-name,
+body.blackhole-active .hero-name:hover,
+body.blackhole-cooldown .hero-name:hover {
+    text-shadow: none !important;
+    filter: none !important;
+}
+
 @keyframes glitch {
     0%, 100% {
         text-shadow:
@@ -916,6 +957,13 @@ h1, h2, h3, h4, h5, h6 {
     color: rgba(255, 255, 255, 0.9);
     position: relative;
     z-index: 1;
+}
+
+.about-photo {
+    display: block;
+    object-fit: cover;
+    object-position: center top;
+    box-shadow: var(--shadow-lg);
 }
 
 .frame-decoration {
@@ -1367,10 +1415,85 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 .footer-logo {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.45rem;
+    min-width: 9.5rem;
+    padding: 0.95rem 1.25rem 1rem;
+    border-radius: 1.25rem;
     font-size: 1.5rem;
     font-weight: 700;
     color: var(--text-primary);
     text-decoration: none;
+    font-family: inherit;
+    background: transparent;
+    border: 1px solid transparent;
+    box-shadow: 0 0 0 rgba(0, 0, 0, 0);
+    transition: transform var(--transition-normal), color var(--transition-normal), border-color var(--transition-normal), background-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.footer-logo:hover,
+.footer-logo:focus-visible {
+    color: var(--accent-primary);
+    border-color: rgba(20, 184, 166, 0.45);
+    background: rgba(20, 184, 166, 0.08);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.18);
+    transform: translateY(-2px);
+}
+
+.footer-logo:active {
+    transform: translateY(0);
+}
+
+.footer-logo:focus-visible {
+    outline: none;
+}
+
+.footer-logo-icon {
+    width: 2.3rem;
+    height: 2.3rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    color: var(--accent-primary);
+    background: rgba(20, 184, 166, 0.12);
+    box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.18);
+    transition: transform var(--transition-normal), background-color var(--transition-normal), box-shadow var(--transition-normal);
+}
+
+.footer-logo-icon svg {
+    width: 1rem;
+    height: 1rem;
+}
+
+.footer-logo-mark {
+    line-height: 1;
+    letter-spacing: 0.02em;
+}
+
+.footer-logo-hint {
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    transition: color var(--transition-normal), transform var(--transition-normal);
+}
+
+.footer-logo:hover .footer-logo-hint,
+.footer-logo:focus-visible .footer-logo-hint,
+.footer-logo:hover .footer-logo-icon,
+.footer-logo:focus-visible .footer-logo-icon {
+    color: var(--accent-primary);
+    transform: translateY(-1px);
+}
+
+.footer-logo:hover .footer-logo-icon,
+.footer-logo:focus-visible .footer-logo-icon {
+    background: rgba(20, 184, 166, 0.18);
+    box-shadow: inset 0 0 0 1px rgba(20, 184, 166, 0.32);
 }
 
 .footer-text {
@@ -1818,35 +1941,38 @@ h1, h2, h3, h4, h5, h6 {
     100% { opacity: 0; transform: translate(-50%, -50%) scale(0.8); }
 }
 
-/* ===== NYAN VIRUS ===== */
-.virus-notification {
+/* ===== NYAN CELEBRATION ===== */
+.nyan-notification {
     position: fixed;
     bottom: 5.5rem;
     right: 1.5rem;
     width: 295px;
-    background: rgba(8, 10, 10, 0.97);
-    border: 1px solid #ef4444;
-    border-radius: 10px;
+    background:
+        linear-gradient(135deg, rgba(248, 255, 250, 0.97), rgba(220, 252, 231, 0.95)),
+        linear-gradient(90deg, rgba(74, 222, 128, 0.12), rgba(45, 212, 191, 0.1));
+    border: 1px solid rgba(34, 197, 94, 0.35);
+    border-radius: 18px;
     padding: 0.9rem 1rem;
     display: flex;
     gap: 0.75rem;
     align-items: flex-start;
     z-index: 99999;
     font-family: 'Fira Code', monospace;
-    box-shadow: 0 0 30px rgba(239, 68, 68, 0.2), 0 8px 32px rgba(0, 0, 0, 0.7);
+    box-shadow: 0 18px 40px rgba(34, 197, 94, 0.16), 0 10px 30px rgba(45, 212, 191, 0.12);
+    backdrop-filter: blur(10px);
     transform: translateX(150%);
     transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
-.virus-notification.show { transform: translateX(0); }
+.nyan-notification.show { transform: translateX(0); }
 
-.virus-progress {
+.nyan-progress {
     height: 5px;
     width: 0;
-    background: linear-gradient(90deg, #ff0000, #ff7700, #ffff00, #00ff00, #0066ff, #8800ff);
-    border-radius: 3px;
-    animation: virus-fill 2.5s ease forwards;
+    background: linear-gradient(90deg, #86efac, #4ade80, #34d399, #2dd4bf);
+    border-radius: 999px;
+    animation: nyan-fill 2.5s ease forwards;
 }
-@keyframes virus-fill { to { width: 100%; } }
+@keyframes nyan-fill { to { width: 100%; } }
 
 @keyframes nyan-star-fade {
     0%   { opacity: 1; transform: scale(1) translateY(0); }

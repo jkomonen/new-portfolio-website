@@ -347,6 +347,11 @@ window.addEventListener('scroll', () => {
 
 // ===== DOUBLE CLICK MEGA EXPLOSION =====
 document.addEventListener('dblclick', (e) => {
+    if (typeof suppressNextDblClick !== 'undefined' && suppressNextDblClick) {
+        suppressNextDblClick = false;
+        return;
+    }
+
     // Mega confetti burst
     for (let i = 0; i < 5; i++) {
         setTimeout(() => {
@@ -998,17 +1003,55 @@ navLinks.querySelectorAll('a').forEach(link => {
 });
 
 // ===== Smooth Scroll for Navigation Links =====
+let scrollAnimationId = null;
+
+function animateScrollTo(targetY, duration = 1400) {
+    const startY = window.pageYOffset;
+    const distance = targetY - startY;
+
+    if (scrollAnimationId) {
+        cancelAnimationFrame(scrollAnimationId);
+    }
+
+    if (Math.abs(distance) < 1) {
+        window.scrollTo(0, targetY);
+        return;
+    }
+
+    const startTime = performance.now();
+
+    function easeInOutCubic(t) {
+        return t < 0.5
+            ? 4 * t * t * t
+            : 1 - Math.pow(-2 * t + 2, 3) / 2;
+    }
+
+    function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easedProgress = easeInOutCubic(progress);
+
+        window.scrollTo(0, startY + (distance * easedProgress));
+
+        if (progress < 1) {
+            scrollAnimationId = requestAnimationFrame(step);
+        } else {
+            window.scrollTo(0, targetY);
+            scrollAnimationId = null;
+        }
+    }
+
+    scrollAnimationId = requestAnimationFrame(step);
+}
+
 document.querySelectorAll('a[href^="#"]').forEach(anchor => {
     anchor.addEventListener('click', function(e) {
         e.preventDefault();
         const href = this.getAttribute('href');
 
-        // If it's just "#" or it's a logo, scroll to top
-        if (href === '#' || this.classList.contains('logo') || this.classList.contains('footer-logo')) {
-            window.scrollTo({
-                top: 0,
-                behavior: 'smooth'
-            });
+        // If it's just "#" or it's the main logo, scroll to top
+        if (href === '#' || this.classList.contains('logo')) {
+            animateScrollTo(0, 1400);
             return;
         }
 
@@ -1018,21 +1061,17 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             const elementPosition = target.getBoundingClientRect().top;
             const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
 
-            window.scrollTo({
-                top: offsetPosition,
-                behavior: 'smooth'
-            });
+            animateScrollTo(offsetPosition, 900);
         }
     });
 });
 
-// ===== Logo Click - Scroll to Top =====
-document.querySelectorAll('.logo, .footer-logo').forEach(logo => {
-    logo.addEventListener('click', (e) => {
-        e.preventDefault();
-        window.scrollTo({ top: 0, behavior: 'smooth' });
+const footerScrollTopButton = document.querySelector('[data-scroll-top]');
+if (footerScrollTopButton) {
+    footerScrollTopButton.addEventListener('click', () => {
+        animateScrollTo(0, 1800);
     });
-});
+}
 
 // ===== Intersection Observer for Animations =====
 const observerOptions = {
@@ -1235,8 +1274,8 @@ if ('requestIdleCallback' in window) {
     setTimeout(preloadImages, 1000);
 }
 
-// ===== NYAN VIRUS =====
-function activateNyanMode() {
+// ===== NYAN CAT =====
+function activateNyanMode(savedTerminalState) {
     if (document.getElementById('nyan-sprite')) return;
 
     // Mute existing music
@@ -1272,18 +1311,18 @@ function activateNyanMode() {
         });
     } catch(e) {}
 
-    // --- VIRUS notification ---
+    // --- NYAN celebration notification ---
     const notif = document.createElement('div');
-    notif.className = 'virus-notification';
+    notif.className = 'nyan-notification';
     notif.innerHTML = `
         <div style="font-size:1.8rem;flex-shrink:0">⚠️</div>
         <div style="flex:1">
-            <div style="color:#ef4444;font-weight:700;font-size:0.82rem;letter-spacing:1px;margin-bottom:0.3rem">VIRUS DETECTED</div>
-            <div style="color:#64748b;font-size:0.72rem;margin-bottom:0.5rem">nyan.exe is spreading through portfolio...</div>
-            <div style="height:5px;background:#1a1a1a;border-radius:3px;overflow:hidden">
-                <div class="virus-progress"></div>
+            <div style="color:#16a34a;font-weight:700;font-size:0.82rem;letter-spacing:1px;margin-bottom:0.3rem">NYAN MODE ENABLED</div>
+            <div style="color:#3f5f4a;font-size:0.72rem;margin-bottom:0.5rem">Launching a full-screen Nyan Cat flyby with rainbow trail.</div>
+            <div style="height:5px;background:rgba(255,255,255,0.65);border-radius:999px;overflow:hidden">
+                <div class="nyan-progress"></div>
             </div>
-            <div style="color:#334155;font-size:0.65rem;margin-top:0.3rem;font-family:'Fira Code',monospace">Containment: IMPOSSIBLE</div>
+            <div style="color:#15803d;font-size:0.65rem;margin-top:0.3rem;font-family:'Fira Code',monospace">Status: in transit</div>
         </div>
     `;
     document.body.appendChild(notif);
@@ -1296,12 +1335,14 @@ function activateNyanMode() {
     trailCanvas.height = window.innerHeight;
     document.body.appendChild(trailCanvas);
     const tCtx = trailCanvas.getContext('2d');
-
     // --- Nyan Cat sprite ---
     const sprite = document.createElement('div');
     sprite.id = 'nyan-sprite';
-    sprite.style.cssText = 'position:fixed;z-index:99990;pointer-events:none;font-size:2.8rem;line-height:1;filter:drop-shadow(0 0 10px rgba(255,180,220,0.95))';
-    sprite.innerHTML = '<span style="letter-spacing:-0.25em">🍞🐱</span>';
+    const NYAN_SOURCE_WIDTH = 400;
+    const NYAN_WIDTH = 286;
+    const NYAN_HEIGHT = 400;
+    sprite.style.cssText = `position:fixed;z-index:99990;pointer-events:none;width:${NYAN_WIDTH}px;height:${NYAN_HEIGHT}px;line-height:1;filter:none;mix-blend-mode:normal;opacity:1;color-scheme:light;overflow:hidden`;
+    sprite.innerHTML = `<img src="nyan-transparent.webp" alt="" aria-hidden="true" style="display:block;width:${NYAN_SOURCE_WIDTH}px;height:${NYAN_HEIGHT}px;image-rendering:auto;">`;
     document.body.appendChild(sprite);
 
     // --- Particle colors → rainbow ---
@@ -1310,23 +1351,63 @@ function activateNyanMode() {
     particles.forEach(p => { p.color = nyanPalette[Math.floor(Math.random() * nyanPalette.length)]; });
 
     // --- Animation ---
-    const STRIPE_COLORS = ['#ff0000','#ff7700','#ffff00','#00cc00','#0055ff','#8800cc'];
-    const STRIPE_H = 10;
+    const STRIPE_COLORS = ['#ff0000','#ff9900','#ffff00','#33ff00','#0099ff','#6633ff'];
+    const STRIPE_H = 18;
     const TRAIL_H = STRIPE_COLORS.length * STRIPE_H;
-    const BASE_Y = window.innerHeight * 0.45;
-    let catX = -100, frameId;
+    const BASE_Y = window.innerHeight * 0.5;
+    const SPEED_SCALE = 1.65;
+    const CAT_SPEED = (7 * 60 / 1000) * SPEED_SCALE;
+    const RAINBOW_STEP = 6;
+    const RAINBOW_WAVELENGTH = 72;
+    const RAINBOW_AMPLITUDE = 1;
+    const TRAIL_ANCHOR_X = 148;
+    const TRAIL_OFFSET_Y = 3;
+    const TRAIL_SEAM_BLEND_WIDTH = 42;
+    const TRAIL_SEAM_DISABLE_BEFORE_EXIT = 180;
+    let catX = -NYAN_WIDTH, frameId;
+    let lastTime = null;
+    let resizeHandler;
 
-    function animateNyan() {
-        catX += 7;
-        const bobY = BASE_Y + Math.sin(catX * 0.06) * 10;
+    function animateNyan(timestamp) {
+        if (lastTime === null) lastTime = timestamp;
+        const delta = timestamp - lastTime;
+        lastTime = timestamp;
+
+        catX += CAT_SPEED * delta;
+        const bobY = BASE_Y;
         sprite.style.left = catX + 'px';
-        sprite.style.top = (bobY - 24) + 'px';
+        sprite.style.top = (bobY - NYAN_HEIGHT / 2) + 'px';
 
-        // Draw rainbow trail
-        STRIPE_COLORS.forEach((color, i) => {
-            tCtx.fillStyle = color;
-            tCtx.fillRect(0, BASE_Y - TRAIL_H / 2 + i * STRIPE_H, catX - 30, STRIPE_H);
-        });
+        // Redraw the trail each frame so the rainbow reaches all the way across the screen behind the cat.
+        tCtx.clearRect(0, 0, trailCanvas.width, trailCanvas.height);
+        const trailEndX = Math.max(0, Math.min(trailCanvas.width, catX + TRAIL_ANCHOR_X));
+        const trailTopY = bobY - TRAIL_H / 2 + TRAIL_OFFSET_Y;
+        for (let x = 0; x < trailEndX; x += RAINBOW_STEP) {
+            const segmentPhase = Math.floor((trailEndX - x) / RAINBOW_WAVELENGTH) % 2;
+            const waveOffset = segmentPhase === 0 ? -RAINBOW_AMPLITUDE : RAINBOW_AMPLITUDE;
+            STRIPE_COLORS.forEach((color, i) => {
+                tCtx.fillStyle = color;
+                tCtx.fillRect(x, trailTopY + i * STRIPE_H + waveOffset, RAINBOW_STEP, STRIPE_H);
+            });
+        }
+
+        if (trailEndX > TRAIL_SEAM_BLEND_WIDTH && catX < window.innerWidth - TRAIL_SEAM_DISABLE_BEFORE_EXIT) {
+            const seamX = trailEndX - TRAIL_SEAM_BLEND_WIDTH;
+
+            // Carve a small center notch into the front edge so the trail matches
+            // the GIF's partially occluded rainbow instead of ending as a full block.
+            tCtx.clearRect(
+                seamX + 8,
+                trailTopY + STRIPE_H * 2 + 2,
+                TRAIL_SEAM_BLEND_WIDTH - 10,
+                STRIPE_H * 2 - 4
+            );
+
+            // Taper the yellow and blue/purple edges slightly at the seam.
+            tCtx.clearRect(seamX, trailTopY + STRIPE_H * 2, 14, STRIPE_H);
+            tCtx.clearRect(seamX + 20, trailTopY + STRIPE_H * 4, 10, STRIPE_H);
+            tCtx.clearRect(seamX + 26, trailTopY + STRIPE_H * 5, 16, STRIPE_H);
+        }
 
         // Spawn stars/sparkles around the cat
         if (Math.random() > 0.72) {
@@ -1338,7 +1419,7 @@ function activateNyanMode() {
             setTimeout(() => star.remove(), 950);
         }
 
-        if (catX < window.innerWidth + 120) {
+        if (catX < window.innerWidth + NYAN_WIDTH) {
             frameId = requestAnimationFrame(animateNyan);
         } else {
             cleanup();
@@ -1346,9 +1427,16 @@ function activateNyanMode() {
     }
     frameId = requestAnimationFrame(animateNyan);
 
+    resizeHandler = () => {
+        trailCanvas.width = window.innerWidth;
+        trailCanvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', resizeHandler);
+
     function cleanup() {
         cancelAnimationFrame(frameId);
         if (nyanAc) { nyanAc.close(); nyanAc = null; }
+        window.removeEventListener('resize', resizeHandler);
         trailCanvas.style.opacity = '0';
         setTimeout(() => trailCanvas.remove(), 900);
         sprite.style.transition = 'opacity 0.3s';
@@ -1358,6 +1446,7 @@ function activateNyanMode() {
         bgMusic.muted = prevMuted;
         notif.classList.remove('show');
         setTimeout(() => notif.remove(), 500);
+        setTimeout(() => restoreTerminalState(savedTerminalState), 450);
     }
 
     setTimeout(() => { if (document.getElementById('nyan-sprite')) cleanup(); }, 15000);
@@ -1467,6 +1556,27 @@ function closeTerminal() {
     termOpen = false;
 }
 
+function captureTerminalState() {
+    return {
+        wasOpen: termOpen,
+        wasMinimized: terminalEl.classList.contains('minimized'),
+        wasMaximized: terminalEl.classList.contains('maximized'),
+        scrollTop: termBody.scrollTop
+    };
+}
+
+function restoreTerminalState(state) {
+    if (!state || !state.wasOpen) return;
+    terminalEl.classList.add('open');
+    terminalEl.classList.toggle('minimized', !!state.wasMinimized);
+    terminalEl.classList.toggle('maximized', !!state.wasMaximized);
+    termOpen = true;
+    requestAnimationFrame(() => {
+        termBody.scrollTop = state.scrollTop;
+        if (!state.wasMinimized) termInput.focus();
+    });
+}
+
 document.addEventListener('keydown', (e) => {
     if (e.target.tagName === 'INPUT' && e.target !== termInput) return;
     if (e.target.tagName === 'TEXTAREA') return;
@@ -1502,36 +1612,65 @@ function termPrint(html, cls) {
     termBody.scrollTop = termBody.scrollHeight;
 }
 
+function highlightRandomProjectCard(card) {
+    if (!card) return;
+
+    const projectsSection = document.getElementById('projects');
+    if (projectsSection) {
+        projectsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    card.style.transition = 'box-shadow 0.25s ease, transform 0.25s ease';
+    card.style.boxShadow = '0 0 0 2px rgba(20, 184, 166, 0.9), 0 0 28px rgba(20, 184, 166, 0.35)';
+    card.style.transform = 'translateY(-4px)';
+
+    setTimeout(() => {
+        card.style.boxShadow = '';
+        card.style.transform = '';
+    }, 2200);
+}
+
 const termCommands = {
     help() {
-        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    – About Joshua\n  <span class="term-accent">skills</span>    – Technical skills\n  <span class="term-accent">projects</span>  – Featured projects\n  <span class="term-accent">contact</span>   – Contact info\n  <span class="term-accent">hack</span>      – Initiate hack sequence\n  <span class="term-accent">matrix</span>    – Japanese matrix rain\n  <span class="term-accent">ls</span>        – List sections\n  <span class="term-accent">date</span>      – Current date/time\n  <span class="term-accent">clear</span>     – Clear terminal\n  <span class="term-accent">exit</span>      – Close terminal\n  <span class="term-rainbow">secrets</span>   – Secret interactions`, 'term-pre');
-    },
-    secrets() {
-        termPrint(`  • Type <span class="term-accent">nyan</span> in this terminal\n  • Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  • Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  • <span class="term-accent">↑↑↓↓←→←→BA</span> anywhere on the page\n  • Double-click anywhere for a glitch burst\n  • Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  • Type <span class="term-accent">brainrot</span> in this terminal\n  • Leave the page idle for 30 seconds`, 'term-pre');
+        termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    - Quick intro\n  <span class="term-accent">random</span>    - Random project or fact\n  <span class="term-accent">date</span>      - Current date/time\n  <span class="term-accent">clear</span>     - Clear terminal\n  <span class="term-accent">exit</span>      - Close terminal\n  <span class="term-rainbow">secrets</span>   - Secret interactions`, 'term-pre');
     },
     whoami() {
-        termPrint(`Joshua Komonen\n  Role     <span class="term-accent">Software Engineer</span>\n  Stack    Full-Stack\n  Location Remote-friendly\n  Status   <span class="term-success">● Open to opportunities</span>`, 'term-pre');
+        termPrint(`Joshua Komonen: software engineer, full-stack builder, and someone who likes turning curious ideas into clean, real-world projects.`);
+        termPrint(`Lately the vibe is scalable apps, continuous learning, and shipping things that feel both useful and fun.`);
     },
-    skills() {
-        termPrint(`Technical Skills:\n  <span class="term-accent">Frontend</span>  React · TypeScript · Next.js · Vue.js · Tailwind\n  <span class="term-accent">Backend</span>   Node.js · Python · Java · Express · FastAPI\n  <span class="term-accent">Database</span>  PostgreSQL · MongoDB · Redis · MySQL\n  <span class="term-accent">DevOps</span>    Docker · AWS · Kubernetes · CI/CD · Git`, 'term-pre');
+    random() {
+        const projectCards = Array.from(document.querySelectorAll('.project-card'));
+        const randomProjectCard = projectCards.length
+            ? projectCards[Math.floor(Math.random() * projectCards.length)]
+            : null;
+
+        const projectTitle = randomProjectCard?.querySelector('h3')?.textContent?.trim();
+        const projectDesc = randomProjectCard?.querySelector('p')?.textContent?.trim();
+        const entries = [
+            'Random fact: Joshua has completed 7 internships and taught 7 courses, which is a pretty solid mix of builder and explainer energy.',
+            'Random fact: this portfolio really likes code, motion, and a little bit of chaos.',
+            'Random fact: the goal here is not just to make things work, but to make them feel memorable.'
+        ];
+
+        if (projectTitle && projectDesc) {
+            entries.push(`Random project: <span class="term-accent">${projectTitle}</span> - ${projectDesc}`);
+        }
+
+        const choice = entries[Math.floor(Math.random() * entries.length)];
+        termPrint(choice);
+
+        if (choice.includes('Random project:')) {
+            highlightRandomProjectCard(randomProjectCard);
+        }
     },
-    projects() {
-        termPrint(`Featured Projects:\n  <span class="term-purple">CloudSync</span>   Real-time collaboration platform\n  <span class="term-purple">DevMetrics</span>  Dev team analytics dashboard\n  <span class="term-purple">SecureAuth</span>  Enterprise auth microservice\n  <span class="term-purple">StreamFlow</span>  High-volume event streaming`, 'term-pre');
-        termPrint(`→ <a href="#projects" class="term-link" onclick="closeTerminal()">View all projects ↗</a>`);
-    },
-    contact() {
-        termPrint(`Contact:\n  Email    <span class="term-accent">joshkomonen@gmail.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/joshuakomonen</span>`, 'term-pre');
-        termPrint(`<a href="mailto:joshkomonen@gmail.com" class="term-link">Send an email</a>`);
-    },
-    contact() {
-        termPrint(`Contact:\n  Email    <span class="term-accent">joshkomonen@gmail.com</span>\n  GitHub   <span class="term-accent">github.com/jkomonen</span>\n  LinkedIn <span class="term-accent">linkedin.com/in/joshuakomonen</span>`, 'term-pre');
-        termPrint(`<a href="mailto:joshkomonen@gmail.com" class="term-link">Send an email</a>`);
+    secrets() {
+        termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
     },
     hack() {
         termPrint('Initiating hack sequence...', 'term-purple');
         const bar = document.createElement('div');
         bar.className = 'terminal-line';
-        bar.innerHTML = '░░░░░░░░░░░░░░░░ 0%';
+        bar.innerHTML = '---------------- 0%';
         termBody.appendChild(bar);
         termBody.scrollTop = termBody.scrollHeight;
         let pct = 0;
@@ -1539,7 +1678,7 @@ const termCommands = {
             pct += Math.floor(Math.random() * 15) + 5;
             if (pct >= 100) { pct = 100; clearInterval(iv); }
             const filled = Math.floor(pct / 100 * 16);
-            bar.innerHTML = '▓'.repeat(filled) + '░'.repeat(16 - filled) + ` ${pct}%`;
+            bar.innerHTML = '#'.repeat(filled) + '-'.repeat(16 - filled) + ` ${pct}%`;
             if (pct === 100) {
                 termBody.scrollTop = termBody.scrollHeight;
                 setTimeout(() => {
@@ -1553,32 +1692,26 @@ const termCommands = {
     matrix() {
         const on = matrixRain.toggle();
         if (on) {
-            termPrint(`<span class="term-success">▓▒░ MATRIX ENGAGED ░▒▓</span>`, 'term-pre');
+            termPrint(`<span class="term-success">*** MATRIX ENGAGED ***</span>`, 'term-pre');
             termPrint(`Japanese rain active. Type <span class="term-accent">matrix</span> again or press <span class="term-accent">Esc</span> to exit.`);
         } else {
             termPrint(`Matrix rain: <span class="term-error">DISENGAGED</span>`);
         }
     },
-    ls() {
-        termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\ndrwxr-xr-x  <span class="term-accent">contact/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
-    },
-    ls() {
-        termPrint(`drwxr-xr-x  <span class="term-accent">about/</span>\ndrwxr-xr-x  <span class="term-accent">skills/</span>\ndrwxr-xr-x  <span class="term-accent">projects/</span>\n-rw-r--r--  resume.pdf`, 'term-pre');
-    },
     date() { termPrint(new Date().toString()); },
     clear() { termBody.innerHTML = ''; },
     exit() { termPrint('Goodbye.', 'term-purple'); setTimeout(closeTerminal, 400); },
     nyan() {
-        termPrint(`<span class="term-error">⚠</span> WARNING: executing <span style="color:#ff69b4">nyan.exe</span>...`);
-        termPrint(`<span style="color:#ff69b4">ニャン ニャン ニャン</span>`);
-        setTimeout(() => { activateNyanMode(); closeTerminal(); }, 600);
+        termPrint(`Launching nyan.exe for maximum rainbow happiness...`, 'term-success');
+        termPrint(`NYAN NYAN NYAN`, 'term-success');
+        const terminalState = captureTerminalState();
+        setTimeout(() => { activateNyanMode(terminalState); closeTerminal(); }, 600);
     },
     sudo() { termPrint('Nice try. You are not in the sudoers file. This incident will be reported.', 'term-error'); },
     cd() { termPrint('There is no place like ~', 'term-accent'); },
     git() { termPrint('fatal: not a git repository (or any parent up to mount point /)'); },
-    rm() { termPrint('rm: cannot remove \'/\': Permission denied', 'term-error'); }
+    rm() { termPrint('rm: cannot remove '/': Permission denied', 'term-error'); }
 };
-
 // ===== BRAINROT VIEWER =====
 const BRAINROT_VIDEOS = [
     { id: 'cKMlkOCii1E', label: 'Subway Surfers – Star Trail' },
@@ -1688,7 +1821,10 @@ termInput.addEventListener('keydown', (e) => {
     const raw = termInput.value.trim();
     if (!raw) return;
     const cmd = raw.toLowerCase().split(' ')[0];
-    termPrint(`<span class="term-accent">$</span> ${raw}`, 'term-prompt-echo');
+    const echoedCommand = cmd === 'secrets'
+        ? `<span class="term-rainbow">${raw}</span>`
+        : raw;
+    termPrint(`<span class="term-accent">$</span> ${echoedCommand}`, 'term-prompt-echo');
     termHistory.unshift(raw);
     termHistoryIdx = -1;
     termInput.value = '';
@@ -1718,8 +1854,44 @@ setTimeout(() => {
 let bhHoldTimer = null;
 let bhEl = null;
 let suppressNextClick = false;
+let suppressNextDblClick = false;
 let bhPointsInterval = null;
+let bhCooldownTimer = null;
 const BH_RECORD_KEY = 'bh_particle_record';
+
+function clearBlackHoleSelection() {
+    const selection = window.getSelection ? window.getSelection() : null;
+    if (selection && selection.rangeCount > 0) {
+        selection.removeAllRanges();
+    }
+}
+
+function setBlackHoleInteractionLock(active) {
+    document.documentElement.classList.toggle('blackhole-active', active);
+    document.body.classList.toggle('blackhole-active', active);
+    if (active) {
+        clearBlackHoleSelection();
+    }
+}
+
+function setBlackHoleCooldown(active) {
+    if (bhCooldownTimer) {
+        clearTimeout(bhCooldownTimer);
+        bhCooldownTimer = null;
+    }
+
+    document.documentElement.classList.toggle('blackhole-cooldown', active);
+    document.body.classList.toggle('blackhole-cooldown', active);
+
+    if (active) {
+        clearBlackHoleSelection();
+        bhCooldownTimer = setTimeout(() => {
+            document.documentElement.classList.remove('blackhole-cooldown');
+            document.body.classList.remove('blackhole-cooldown');
+            bhCooldownTimer = null;
+        }, 700);
+    }
+}
 
 function spawnBhPoints(x, y, count) {
     const el = document.createElement('div');
@@ -1787,6 +1959,7 @@ document.addEventListener('mousedown', (e) => {
     if (e.target.closest('a, button, input, textarea, .terminal-overlay, .navbar, .project-link')) return;
     bhHoldTimer = setTimeout(() => {
         isHolding = true;
+        setBlackHoleInteractionLock(true);
         // Reset any previously absorbed particles before creating new black hole
         if (typeof particles !== 'undefined') {
             particles.forEach(p => { p.absorbed = false; });
@@ -1811,6 +1984,8 @@ document.addEventListener('mousedown', (e) => {
 
 document.addEventListener('mousemove', (e) => {
     if (!isHolding || !blackHole) return;
+    e.preventDefault();
+    clearBlackHoleSelection();
     blackHole.x = e.clientX;
     blackHole.y = e.clientY;
     if (bhEl) { bhEl.style.left = e.clientX + 'px'; bhEl.style.top = e.clientY + 'px'; }
@@ -1820,6 +1995,8 @@ document.addEventListener('mouseup', () => {
     clearTimeout(bhHoldTimer);
     if (isHolding && blackHole) {
         suppressNextClick = true;
+        suppressNextDblClick = true;
+        setBlackHoleCooldown(true);
         if (typeof particles !== 'undefined') {
             particles.forEach(p => {
                 if (p.absorbed) {
@@ -1854,11 +2031,11 @@ document.addEventListener('mouseup', () => {
         if (blackHole && blackHole.absorbedCount > 0) {
             spawnBhTotal(blackHole.x, blackHole.y, blackHole.absorbedCount);
         }
-        document.body.style.filter = 'brightness(2)';
-        setTimeout(() => document.body.style.filter = '', 120);
         if (bhEl) { bhEl.remove(); bhEl = null; }
         setTimeout(() => { suppressNextClick = false; }, 100);
+        setTimeout(() => { suppressNextDblClick = false; }, 400);
     }
+    setBlackHoleInteractionLock(false);
     isHolding = false;
     blackHole = null;
 });
