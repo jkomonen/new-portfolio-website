@@ -773,14 +773,14 @@ class Particle {
             let distance = Math.sqrt(dx * dx + dy * dy);
 
             // Strong repulsion when very close, gentle attraction from afar
-            if (distance < 100) {
+            if (distance < 160) {
                 // Push away when close
-                let force = (100 - distance) / 100;
-                this.x -= (dx / distance) * force * 3;
-                this.y -= (dy / distance) * force * 3;
-            } else if (distance < 300) {
-                // Gentle pull when medium distance
-                let force = (300 - distance) / 300 * 0.5;
+                let force = (160 - distance) / 160;
+                this.x -= (dx / distance) * force * 9;
+                this.y -= (dy / distance) * force * 9;
+            } else if (distance < 500) {
+                // Stronger pull when medium distance
+                let force = (500 - distance) / 500 * 1.5;
                 this.x += (dx / distance) * force;
                 this.y += (dy / distance) * force;
             }

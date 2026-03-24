@@ -6,7 +6,23 @@
       "Bash(cmd /c \"cd /d C:\\\\code\\\\projects && ren testClaudeProject new-portfolio-website\")",
       "Bash(cmd /c \"dir C:\\\\code\\\\projects\")",
       "Bash(powershell -Command \"Rename-Item -Path ''C:\\\\code\\\\projects\\\\testClaudeProject'' -NewName ''new-portfolio-website''\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(git remote add:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(start \"\" \"C:/code/projects/new-portfolio-website/index.html\")",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(gh api:*)",
+      "Bash(start \"\" \"http://localhost:3000\")",
+      "Bash(python -m http.server:*)",
+      "Bash(curl:*)",
+      "Bash(start:*)",
+      "Bash(npx serve:*)",
+      "Bash(ipconfig:*)",
+      "Bash(netsh advfirewall firewall add rule:*)",
+      "Bash(ffmpeg:*)",
+      "Bash(where:*)"
     ]
   }
 }

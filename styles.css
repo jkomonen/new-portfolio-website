@@ -1978,3 +1978,18 @@ body.blackhole-cooldown .hero-name:hover {
     0%   { opacity: 1; transform: scale(1) translateY(0); }
     100% { opacity: 0; transform: scale(0.3) translateY(-25px); }
 }
+
+/* ===== Initials Avatar ===== */
+.initials-avatar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: clamp(3rem, 8vw, 5rem);
+    font-weight: 700;
+    font-family: var(--font-sans);
+    color: #fff;
+    letter-spacing: -2px;
+    user-select: none;
+}
+
