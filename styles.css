@@ -907,6 +907,8 @@ body.blackhole-cooldown .hero-name:hover {
     font-size: 0.8rem;
     letter-spacing: 2px;
     text-transform: uppercase;
+    z-index: 2;
+    pointer-events: none;
 }
 
 .scroll-line {
@@ -1119,8 +1121,8 @@ body.blackhole-cooldown .hero-name:hover {
 
 .project-image {
     position: relative;
-    aspect-ratio: 16/10;
-    background: rgba(24, 40, 40, 0.7);
+    aspect-ratio: 16/9;
+    background: rgba(14, 24, 24, 0.9);
     overflow: hidden;
 }
 
@@ -1142,8 +1144,8 @@ body.blackhole-cooldown .hero-name:hover {
     width: 100%;
     height: 100%;
     display: block;
-    object-fit: cover;
-    object-position: center top;
+    object-fit: contain;
+    object-position: center center;
     position: relative;
     z-index: 0;
 }
@@ -1636,6 +1638,14 @@ body.blackhole-cooldown .hero-name:hover {
 
     .timeline-marker {
         left: 0;
+    }
+}
+
+@media (max-height: 800px) {
+    .scroll-indicator {
+        bottom: 0.65rem;
+        transform: translateX(-50%) scale(0.9);
+        opacity: 0.9;
     }
 }
 
