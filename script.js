@@ -1664,7 +1664,7 @@ const termCommands = {
     }
   },
   secrets() {
-    termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
+    termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Triple-click the <span class="term-accent">About</span> avatar for a 6-nyan swarm\n  - Type <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
   },
   hack() {
     termPrint('Initiating hack sequence...', 'term-purple');
@@ -1801,6 +1801,151 @@ document.addEventListener('keydown', (e) => {
 termCommands.brainrot = function () {
   termPrint(`Opening reels... <span class="term-accent">← →</span> to navigate, <span class="term-accent">Esc</span> to close`);
   setTimeout(() => { closeTerminal(); openReels(); }, 400);
+};
+
+const petCompanion = (() => {
+  const petRoot = document.getElementById('pet-companion');
+  const bubbleEl = document.getElementById('pet-companion-bubble');
+  const triggerEl = document.querySelector('.secret-pet-trigger');
+
+  if (!petRoot || !bubbleEl || !triggerEl) {
+    return { reveal() {}, toggleSwarm() {} };
+  }
+
+  const messages = [
+    'meow.exe loaded',
+    'certified bug hunter',
+    'currently vibing',
+    'tiny chaos assistant',
+    'paws on production'
+  ];
+
+  const companions = [];
+  const spriteSrc = petRoot.querySelector('.pet-companion-sprite')?.getAttribute('src') || 'nyan-transparent.webp';
+  const SWARM_COUNT = 6;
+  const SWARM_OFFSETS = [
+    { x: 0, y: 0 },
+    { x: 74, y: -22 },
+    { x: -72, y: -18 },
+    { x: 122, y: 30 },
+    { x: -122, y: 26 },
+    { x: 0, y: 66 }
+  ];
+  let active = true;
+  let targetX = window.innerWidth - 180;
+  let targetY = window.innerHeight - 140;
+  let bubbleTimer = null;
+  let clickCount = 0;
+  let clickResetTimer = null;
+  let animationStarted = false;
+
+  function createCompanion(seedX, seedY) {
+    const el = document.createElement('div');
+    el.className = 'pet-companion is-active';
+    el.innerHTML = `<img class="pet-companion-sprite" src="${spriteSrc}" alt="Nyan cat companion">`;
+    el.style.transform = `translate(${seedX}px, ${seedY}px)`;
+    document.body.appendChild(el);
+    return { el, x: seedX, y: seedY, targetX: seedX, targetY: seedY };
+  }
+
+  function setCompanionCount(count) {
+    const desired = Math.max(1, Math.min(SWARM_COUNT, count));
+    while (companions.length < desired) {
+      companions.push(createCompanion(targetX, targetY));
+    }
+    while (companions.length > desired) {
+      const removed = companions.pop();
+      removed?.el?.remove();
+    }
+  }
+
+  function isSwarmMode() {
+    return companions.length >= SWARM_COUNT;
+  }
+
+  function render() {
+    companions.forEach((comp, idx) => {
+      const offset = SWARM_OFFSETS[idx] || SWARM_OFFSETS[0];
+      const desiredX = targetX + offset.x;
+      const desiredY = targetY + offset.y;
+      const followSpeed = idx === 0 ? 0.1 : 0.08;
+      comp.targetX = desiredX;
+      comp.targetY = desiredY;
+      comp.x += (comp.targetX - comp.x) * followSpeed;
+      comp.y += (comp.targetY - comp.y) * followSpeed;
+      comp.el.style.transform = `translate(${comp.x}px, ${comp.y}px)`;
+      comp.el.classList.toggle('is-flipped', comp.targetX < comp.x);
+    });
+
+    if (active) {
+      requestAnimationFrame(render);
+    }
+  }
+
+  function say(message) {
+    bubbleEl.textContent = message;
+    companions[0]?.el?.classList.add('show-bubble');
+    clearTimeout(bubbleTimer);
+    bubbleTimer = setTimeout(() => companions[0]?.el?.classList.remove('show-bubble'), 2200);
+  }
+
+  function onPointerMove(event) {
+    if (!active) return;
+
+    const offsetX = event.clientX < window.innerWidth / 2 ? 48 : -120;
+    targetX = Math.min(window.innerWidth - 96, Math.max(16, event.clientX + offsetX));
+    targetY = Math.min(window.innerHeight - 96, Math.max(16, event.clientY + 18));
+  }
+
+  function reveal(customMessage, desiredCount) {
+    if (typeof desiredCount === 'number') {
+      setCompanionCount(desiredCount);
+    }
+
+    if (!animationStarted) {
+      animationStarted = true;
+      requestAnimationFrame(render);
+    }
+    say(customMessage || messages[Math.floor(Math.random() * messages.length)]);
+  }
+
+  function toggleSwarm(customMessage) {
+    if (isSwarmMode()) {
+      reveal(customMessage || 'swarm disabled: back to solo nyan', 1);
+    } else {
+      reveal(customMessage || 'secret unlocked: nyan swarm online', SWARM_COUNT);
+    }
+  }
+
+  triggerEl.addEventListener('click', () => {
+    clickCount += 1;
+    clearTimeout(clickResetTimer);
+    clickResetTimer = setTimeout(() => {
+      clickCount = 0;
+    }, 1400);
+
+    if (clickCount >= 3) {
+      clickCount = 0;
+      toggleSwarm();
+    }
+  });
+
+  window.addEventListener('resize', () => {
+    targetX = Math.min(targetX, window.innerWidth - 96);
+    targetY = Math.min(targetY, window.innerHeight - 96);
+  });
+
+  petRoot.remove();
+  setCompanionCount(1);
+  document.addEventListener('pointermove', onPointerMove);
+  reveal('nyan companion online');
+
+  return { reveal, toggleSwarm };
+})();
+
+termCommands.pet = function () {
+  petCompanion.toggleSwarm('terminal override: toggled nyan swarm');
+  termPrint('Toggled nyan mode: solo <-> 6-cat swarm.', 'term-success');
 };
 
 termInput.addEventListener('keydown', (e) => {
@@ -2048,12 +2193,15 @@ let musicStarted = false;
 function startMusic() {
   if (!musicStarted) {
     bgMusic.volume = 0.4;
-    bgMusic.play().catch(() => { });
-    musicStarted = true;
+    bgMusic.play().then(() => {
+      musicStarted = true;
+    }).catch(() => { });
   }
 }
 
-// Start on first user interaction (browser autoplay policy)
+startMusic();
+
+// Retry on first user interaction if autoplay is blocked by the browser
 document.addEventListener('click', startMusic, { once: true });
 document.addEventListener('keydown', startMusic, { once: true });
 

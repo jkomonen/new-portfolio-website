@@ -91,7 +91,8 @@
       <div class="about-content">
         <div class="about-image">
           <div class="image-frame">
-            <div class="about-photo image-placeholder initials-avatar">JK</div>
+            <button type="button" class="about-photo image-placeholder initials-avatar secret-pet-trigger"
+              aria-label="Secret pet trigger">JK</button>
             <div class="frame-decoration"></div>
           </div>
         </div>
@@ -394,6 +395,11 @@
       </div>
     </div>
   </footer>
+
+  <div id="pet-companion" class="pet-companion" aria-hidden="true">
+    <div id="pet-companion-bubble" class="pet-companion-bubble"></div>
+    <img class="pet-companion-sprite" src="nyan-transparent.webp" alt="Nyan cat companion">
+  </div>
 
   <script src="script.js"></script>
 </body>
