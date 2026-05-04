@@ -165,7 +165,7 @@ if (heroSection) {
 // Exclude hero buttons to prevent cursor flickering
 document.querySelectorAll('.btn').forEach(btn => {
   // Skip buttons in hero section
-  if (btn.closest('.hero-cta') || btn.closest('.hero-socials')) {
+  if (btn.closest('.hero-cta') || btn.closest('.hero-socials') || btn.closest('.hero-secrets-card')) {
     return; // Already handled above
   }
 
@@ -1454,10 +1454,14 @@ function activateNyanMode(savedTerminalState) {
 
 // ===== FULL-SCREEN JAPANESE MATRIX RAIN =====
 let matrixRainActive = false;
+let matrixAutoStopTimer = null;
 const matrixRain = (() => {
   const kana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンァィゥェォッャュョヴ';
   const fs = 16;
   let canvas, ctx, cols, drops, speeds, animId, ready = false;
+  let overlayOpacity = 0;
+  let targetOpacity = 0;
+  let lastFrameTime = 0;
 
   function resize() {
     canvas.width = window.innerWidth;
@@ -1468,8 +1472,25 @@ const matrixRain = (() => {
   }
 
   function draw() {
-    if (!matrixRainActive) return;
-    ctx.fillStyle = 'rgba(0, 0, 0, 0.05)';
+    const opacityDelta = targetOpacity - overlayOpacity;
+    if (Math.abs(opacityDelta) > 0.01) {
+      overlayOpacity += opacityDelta * 0.12;
+    } else {
+      overlayOpacity = targetOpacity;
+    }
+
+    if (overlayOpacity <= 0.001 && !matrixRainActive) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      animId = null;
+      lastFrameTime = 0;
+      return;
+    }
+
+    const now = performance.now();
+    const delta = lastFrameTime ? Math.min((now - lastFrameTime) / 16.6667, 2) : 1;
+    lastFrameTime = now;
+
+    ctx.fillStyle = `rgba(0, 0, 0, ${0.05 * Math.max(overlayOpacity, 0.08)})`;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.font = `bold ${fs}px monospace`;
     for (let i = 0; i < cols; i++) {
@@ -1479,12 +1500,13 @@ const matrixRain = (() => {
       const r = Math.random();
       ctx.fillStyle = r > 0.98 ? '#fff' : r > 0.65 ? '#00ff41' : '#009921';
       if (y > 0) ctx.fillText(char, x, y);
-      drops[i] += speeds[i];
+      drops[i] += speeds[i] * delta;
       if (drops[i] * fs > canvas.height && Math.random() > 0.975) {
         drops[i] = -(Math.random() * 30);
         speeds[i] = 0.4 + Math.random() * 0.7;
       }
     }
+    canvas.style.opacity = String(overlayOpacity);
     animId = requestAnimationFrame(draw);
   }
 
@@ -1494,7 +1516,7 @@ const matrixRain = (() => {
       position: 'fixed', top: '0', left: '0',
       width: '100%', height: '100%',
       zIndex: '9980', pointerEvents: 'none',
-      opacity: '0', transition: 'opacity 0.5s ease'
+      opacity: '0'
     });
     document.body.appendChild(canvas);
     ctx = canvas.getContext('2d');
@@ -1507,18 +1529,32 @@ const matrixRain = (() => {
     toggle() {
       if (!ready) init();
       matrixRainActive = !matrixRainActive;
-      canvas.style.opacity = matrixRainActive ? '1' : '0';
+      targetOpacity = matrixRainActive ? 1 : 0;
       if (matrixRainActive) {
+        if (!animId) draw();
+      } else if (!animId) {
         draw();
-      } else {
-        cancelAnimationFrame(animId);
-        setTimeout(() => { if (!matrixRainActive) ctx.clearRect(0, 0, canvas.width, canvas.height); }, 600);
       }
       return matrixRainActive;
     },
     isActive() { return matrixRainActive; }
   };
 })();
+
+function stopMatrixAutoTimer() {
+  if (!matrixAutoStopTimer) return;
+  clearTimeout(matrixAutoStopTimer);
+  matrixAutoStopTimer = null;
+}
+
+function setTimedMatrixRun(duration = 3000) {
+  stopMatrixAutoTimer();
+  if (!matrixRain.isActive()) matrixRain.toggle();
+  matrixAutoStopTimer = setTimeout(() => {
+    if (matrixRain.isActive()) matrixRain.toggle();
+    matrixAutoStopTimer = null;
+  }, duration);
+}
 
 // ===== HIDDEN TERMINAL (press `) =====
 const terminalEl = document.createElement('div');
@@ -1533,7 +1569,7 @@ terminalEl.innerHTML = `
     </div>
     <div class="terminal-input-row">
         <span class="terminal-prompt-label">jkomonen@portfolio:~ $&nbsp;</span>
-        <input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="type a command...">
+        <input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="type help for commands...">
     </div>
 `;
 document.body.appendChild(terminalEl);
@@ -1543,6 +1579,13 @@ const termInput = document.getElementById('terminal-input');
 let termOpen = false;
 let termHistory = [];
 let termHistoryIdx = -1;
+
+function setTerminalWindowState(state) {
+  terminalEl.classList.remove('minimized', 'maximized');
+  if (state === 'minimized' || state === 'maximized') {
+    terminalEl.classList.add(state);
+  }
+}
 
 function openTerminal() {
   terminalEl.classList.add('open');
@@ -1568,8 +1611,7 @@ function captureTerminalState() {
 function restoreTerminalState(state) {
   if (!state || !state.wasOpen) return;
   terminalEl.classList.add('open');
-  terminalEl.classList.toggle('minimized', !!state.wasMinimized);
-  terminalEl.classList.toggle('maximized', !!state.wasMaximized);
+  setTerminalWindowState(state.wasMinimized ? 'minimized' : state.wasMaximized ? 'maximized' : null);
   termOpen = true;
   requestAnimationFrame(() => {
     termBody.scrollTop = state.scrollTop;
@@ -1582,11 +1624,11 @@ document.addEventListener('keydown', (e) => {
   if (e.target.tagName === 'TEXTAREA') return;
   if (e.key === '`') {
     e.preventDefault();
-    termHint.classList.remove('bouncing');
     termOpen ? closeTerminal() : openTerminal();
   }
   if (e.key === 'Escape') {
     if (termOpen) closeTerminal();
+    stopMatrixAutoTimer();
     if (matrixRainActive) matrixRain.toggle();
     if (eternalFCleanup) eternalFCleanup();
   }
@@ -1595,13 +1637,15 @@ document.addEventListener('keydown', (e) => {
 terminalEl.querySelector('.dot-red').addEventListener('click', closeTerminal);
 terminalEl.querySelector('.dot-yellow').addEventListener('click', () => {
   if (!termOpen) return;
-  terminalEl.classList.toggle('minimized');
-  if (!terminalEl.classList.contains('minimized')) setTimeout(() => termInput.focus(), 50);
+  const nextState = terminalEl.classList.contains('minimized') ? null : 'minimized';
+  setTerminalWindowState(nextState);
+  if (!nextState) setTimeout(() => termInput.focus(), 50);
 });
 terminalEl.querySelector('.dot-green').addEventListener('click', () => {
   if (!termOpen) return;
-  terminalEl.classList.toggle('maximized');
-  setTimeout(() => termInput.focus(), 50);
+  const nextState = terminalEl.classList.contains('maximized') ? null : 'maximized';
+  setTerminalWindowState(nextState);
+  if (!terminalEl.classList.contains('minimized')) setTimeout(() => termInput.focus(), 50);
 });
 
 function termPrint(html, cls) {
@@ -1610,6 +1654,12 @@ function termPrint(html, cls) {
   line.innerHTML = html;
   termBody.appendChild(line);
   termBody.scrollTop = termBody.scrollHeight;
+}
+
+function revealSecretsInTerminal() {
+  if (!termOpen) openTerminal();
+  termPrint('<span class="term-accent">$</span> <span class="term-rainbow">secrets</span>', 'term-prompt-echo');
+  termCommands.secrets();
 }
 
 function highlightRandomProjectCard(card) {
@@ -1664,7 +1714,7 @@ const termCommands = {
     }
   },
   secrets() {
-    termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold anywhere to summon a <span class="term-accent">black hole</span>\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Triple-click the <span class="term-accent">About</span> avatar for a 6-nyan swarm\n  - Type <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
+    termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold anywhere outside of this terminal to summon a black hole\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Triple-click the <span class="term-accent">About</span> avatar for a 6-nyan swarm\n  - Type <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
   },
   hack() {
     termPrint('Initiating hack sequence...', 'term-purple');
@@ -1690,6 +1740,7 @@ const termCommands = {
     }, 120);
   },
   matrix() {
+    stopMatrixAutoTimer();
     const on = matrixRain.toggle();
     if (on) {
       termPrint(`<span class="term-success">*** MATRIX ENGAGED ***</span>`, 'term-pre');
@@ -1705,7 +1756,8 @@ const termCommands = {
     termPrint(`Launching nyan.exe for maximum rainbow happiness...`, 'term-success');
     termPrint(`NYAN NYAN NYAN`, 'term-success');
     const terminalState = captureTerminalState();
-    setTimeout(() => { activateNyanMode(terminalState); closeTerminal(); }, 600);
+    activateNyanMode(terminalState);
+    closeTerminal();
   },
   sudo() { termPrint('Nice try. You are not in the sudoers file. This incident will be reported.', 'term-error'); },
   cd() { termPrint('There is no place like ~', 'term-accent'); },
@@ -1949,7 +2001,7 @@ termCommands.pet = function () {
 };
 
 termInput.addEventListener('keydown', (e) => {
-  if (e.key === '`' && termOpen) { e.preventDefault(); e.stopPropagation(); termHint.classList.remove('bouncing'); closeTerminal(); return; }
+  if (e.key === '`' && termOpen) { e.preventDefault(); e.stopPropagation(); closeTerminal(); return; }
   if (e.key === 'ArrowUp') {
     e.preventDefault();
     termHistoryIdx = Math.min(termHistoryIdx + 1, termHistory.length - 1);
@@ -1980,20 +2032,27 @@ termInput.addEventListener('keydown', (e) => {
   }
 });
 
-// Permanent terminal toggle button (bottom right)
-const termHint = document.createElement('div');
-termHint.className = 'terminal-hint';
-termHint.innerHTML = '<span class="term-hint-key">`</span> Interactive Terminal (type help)';
-termHint.addEventListener('click', () => {
-  termHint.classList.remove('bouncing');
-  termOpen ? closeTerminal() : openTerminal();
-});
-document.body.appendChild(termHint);
+const heroSecretsTrigger = document.getElementById('hero-secrets-trigger');
+if (heroSecretsTrigger) {
+  heroSecretsTrigger.addEventListener('click', () => {
+    openTerminal();
+    revealSecretsInTerminal();
+  });
+}
 
-// Bounce quickly so users notice within ~0.5s
-setTimeout(() => {
-  if (!termOpen) termHint.classList.add('bouncing');
-}, 350);
+const heroRunMatrix = document.getElementById('hero-run-matrix');
+if (heroRunMatrix) {
+  heroRunMatrix.addEventListener('click', () => {
+    setTimedMatrixRun(3000);
+  });
+}
+
+const heroRunNyan = document.getElementById('hero-run-nyan');
+if (heroRunNyan) {
+  heroRunNyan.addEventListener('click', () => {
+    termCommands.nyan();
+  });
+}
 
 // ===== PARTICLE BLACK HOLE (click + hold) =====
 let bhHoldTimer = null;
