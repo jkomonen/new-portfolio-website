@@ -698,8 +698,17 @@ function activateUltraMode() {
 // Black hole state (declared here so Particle.update() can reference it safely)
 let blackHole = null;
 let isHolding = false;
-const BH_BASE_RADIUS = 40;         // base radius in px (matches 80px CSS diameter)
+const BH_BASE_RADIUS = 40;          // base radius in px (matches 80px CSS diameter)
 const BH_GROWTH_PER_PARTICLE = 0.2; // px of radius growth per absorbed particle
+
+// ===== BLACK HOLE TUNING (LOCKED) =====
+// Only adjust these on purpose; they control launch suction feel.
+const BH_ATTRACT_RANGE_MULT = 7;
+const BH_FORCE_COEFF = 700;
+const BH_FORCE_MAX = 16;
+const BH_LAUNCH_BOOST_BASE = 1.15;
+const BH_LAUNCH_BOOST_EXTRA = 0.5;
+const BH_LAUNCH_BOOST_DURATION_MS = 2000;
 
 // ===== Particle Physics Background =====
 const canvas = document.getElementById('particle-canvas');
@@ -853,10 +862,13 @@ class Particle {
 
       // Pull particles within a range that grows with the black hole
       let sizeScale = blackHole.radius / BH_BASE_RADIUS;
-      let attractRange = blackHole.radius * 6;
+      const ageMs = blackHole.bornAt ? (performance.now() - blackHole.bornAt) : 0;
+      const launchBoost = BH_LAUNCH_BOOST_BASE
+        + Math.max(0, (BH_LAUNCH_BOOST_DURATION_MS - ageMs) / BH_LAUNCH_BOOST_DURATION_MS) * BH_LAUNCH_BOOST_EXTRA;
+      let attractRange = blackHole.radius * BH_ATTRACT_RANGE_MULT * launchBoost;
       if (bhDist < attractRange) {
         // 1/dist falloff gives noticeable pull across the full range
-        let bhForce = Math.min(550 * sizeScale / bhDist, 14 * sizeScale);
+        let bhForce = Math.min(BH_FORCE_COEFF * sizeScale * launchBoost / bhDist, BH_FORCE_MAX * sizeScale * launchBoost);
         this.x += (bhDx / bhDist) * bhForce;
         this.y += (bhDy / bhDist) * bhForce;
       }
@@ -2171,7 +2183,7 @@ document.addEventListener('mousedown', (e) => {
       particles.forEach(p => { p.absorbed = false; });
     }
     bhComboTotal = 0;
-    blackHole = { x: e.clientX, y: e.clientY, radius: BH_BASE_RADIUS, absorbedCount: 0, pendingPoints: 0 };
+    blackHole = { x: e.clientX, y: e.clientY, radius: BH_BASE_RADIUS, absorbedCount: 0, pendingPoints: 0, bornAt: performance.now() };
     bhEl = document.createElement('div');
     bhEl.className = 'black-hole-vortex';
     bhEl.style.left = e.clientX + 'px';
