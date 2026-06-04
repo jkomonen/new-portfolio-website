@@ -669,7 +669,7 @@ function activateUltraMode() {
         text-align: center;
         font-family: 'Fira Code', monospace;
     `;
-  message.innerHTML = '{ ULTRA_MODE: true }<br>&lt;/&gt; HACK THE PLANET &lt;/&gt;';
+  message.innerHTML = '{ ULTRA_MODE: true }<br>&lt;/&gt; SECURITY OVERRIDE &lt;/&gt;';
   document.body.appendChild(message);
 
   const pulseStyle = document.createElement('style');
@@ -1327,14 +1327,14 @@ function activateNyanMode(savedTerminalState) {
   const notif = document.createElement('div');
   notif.className = 'nyan-notification';
   notif.innerHTML = `
-        <div style="font-size:1.8rem;flex-shrink:0">⚠️</div>
+        <div style="font-size:1.8rem;flex-shrink:0">✦</div>
         <div style="flex:1">
-            <div style="color:#16a34a;font-weight:700;font-size:0.82rem;letter-spacing:1px;margin-bottom:0.3rem">NYAN MODE ENABLED</div>
-            <div style="color:#3f5f4a;font-size:0.72rem;margin-bottom:0.5rem">Launching a full-screen Nyan Cat flyby with rainbow trail.</div>
+          <div style="color:#16a34a;font-weight:700;font-size:0.82rem;letter-spacing:1px;margin-bottom:0.3rem">NYAN FLYBY</div>
+          <div style="color:#3f5f4a;font-size:0.72rem;margin-bottom:0.5rem">Full-screen Nyan flyby with rainbow trail.</div>
             <div style="height:5px;background:rgba(255,255,255,0.65);border-radius:999px;overflow:hidden">
                 <div class="nyan-progress"></div>
             </div>
-            <div style="color:#15803d;font-size:0.65rem;margin-top:0.3rem;font-family:'Fira Code',monospace">Status: in transit</div>
+          <div style="color:#15803d;font-size:0.65rem;margin-top:0.3rem;font-family:'Fira Code',monospace">Status: running</div>
         </div>
     `;
   document.body.appendChild(notif);
@@ -1577,11 +1577,11 @@ terminalEl.innerHTML = `
         <span class="terminal-title">jkomonen@portfolio:~</span>
     </div>
     <div class="terminal-body" id="terminal-body">
-        <div class="terminal-line">Welcome to Joshua's terminal. Type <span class="term-accent">help</span> for available commands.</div>
+        <div class="terminal-line">Welcome to the terminal. Type <span class="term-accent">help</span> for commands.</div>
     </div>
     <div class="terminal-input-row">
         <span class="terminal-prompt-label">jkomonen@portfolio:~ $&nbsp;</span>
-        <input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="type help for commands...">
+        <input class="terminal-input" id="terminal-input" type="text" autocomplete="off" spellcheck="false" placeholder="type help for commands">
     </div>
 `;
 document.body.appendChild(terminalEl);
@@ -1694,11 +1694,11 @@ function highlightRandomProjectCard(card) {
 
 const termCommands = {
   help() {
-    termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    - Quick intro\n  <span class="term-accent">random</span>    - Random project or fact\n  <span class="term-accent">date</span>      - Current date/time\n  <span class="term-accent">clear</span>     - Clear terminal\n  <span class="term-accent">exit</span>      - Close terminal\n  <span class="term-rainbow">secrets</span>   - Secret interactions`, 'term-pre');
+    termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    - Quick intro\n  <span class="term-accent">random</span>    - Random project or fact\n  <span class="term-accent">date</span>      - Current date/time\n  <span class="term-accent">clear</span>     - Clear terminal\n  <span class="term-accent">exit</span>      - Close terminal\n  <span class="term-rainbow">secrets</span>   - Hidden interactions`, 'term-pre');
   },
   whoami() {
-    termPrint(`Joshua Komonen: software engineer, full-stack builder, and someone who likes turning curious ideas into clean, real-world projects.`);
-    termPrint(`Lately the vibe is scalable apps, continuous learning, and shipping things that feel both useful and fun.`);
+    termPrint(`Joshua Komonen: software engineer focused on practical, well-designed web products.`);
+    termPrint(`Currently building full-stack apps with attention to performance and maintainability.`);
   },
   random() {
     const projectCards = Array.from(document.querySelectorAll('.project-card'));
@@ -1709,9 +1709,9 @@ const termCommands = {
     const projectTitle = randomProjectCard?.querySelector('h3')?.textContent?.trim();
     const projectDesc = randomProjectCard?.querySelector('p')?.textContent?.trim();
     const entries = [
-      'Random fact: Joshua has completed 7 internships and taught 7 courses, which is a pretty solid mix of builder and explainer energy.',
-      'Random fact: this portfolio really likes code, motion, and a little bit of chaos.',
-      'Random fact: the goal here is not just to make things work, but to make them feel memorable.'
+      'Random fact: 7 internships and 7 courses taught.',
+      'Random fact: this site is a single-page experience with custom interactions.',
+      'Random fact: the goal is clean UX and dependable code.'
     ];
 
     if (projectTitle && projectDesc) {
@@ -1726,10 +1726,10 @@ const termCommands = {
     }
   },
   secrets() {
-    termPrint(`  - Click and hold anywhere outside of this terminal to summon a black hole\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw glowing neon ink\n  - Type <span class="term-accent">hack</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page <span class="term-accent">(google it)</span>\n  - Double-click anywhere for a glitch burst\n  - Close terminal, then hold <span class="term-accent">F</span> on the page for 3 seconds to pay respects\n  - Type <span class="term-accent">brainrot</span> in this terminal\n  - Triple-click the <span class="term-accent">About</span> avatar for a 6-nyan swarm\n  - Type <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
+    termPrint(`  - Click and hold outside the terminal to open a black hole\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw neon ink\n  - Run <span class="term-accent">hack</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page\n  - Double-click anywhere for a glitch burst\n  - Close the terminal, then hold <span class="term-accent">F</span> for 3 seconds\n  - Run <span class="term-accent">brainrot</span> in this terminal\n  - Run <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
   },
   hack() {
-    termPrint('Initiating hack sequence...', 'term-purple');
+    termPrint('Starting sequence...', 'term-purple');
     const bar = document.createElement('div');
     bar.className = 'terminal-line';
     bar.innerHTML = '---------------- 0%';
@@ -1744,7 +1744,7 @@ const termCommands = {
       if (pct === 100) {
         termBody.scrollTop = termBody.scrollHeight;
         setTimeout(() => {
-          termPrint('ACCESS GRANTED. Welcome to the mainframe.', 'term-success');
+          termPrint('Access granted.', 'term-success');
           closeTerminal();
           activateHackMode();
         }, 300);
@@ -1755,41 +1755,38 @@ const termCommands = {
     stopMatrixAutoTimer();
     const on = matrixRain.toggle();
     if (on) {
-      termPrint(`<span class="term-success">*** MATRIX ENGAGED ***</span>`, 'term-pre');
-      termPrint(`Japanese rain active. Type <span class="term-accent">matrix</span> again or press <span class="term-accent">Esc</span> to exit.`);
+      termPrint(`<span class="term-success">Matrix rain enabled.</span>`, 'term-pre');
+      termPrint(`Matrix rain active. Type <span class="term-accent">matrix</span> again or press <span class="term-accent">Esc</span> to exit.`);
     } else {
-      termPrint(`Matrix rain: <span class="term-error">DISENGAGED</span>`);
+      termPrint(`Matrix rain disabled.`);
     }
   },
   date() { termPrint(new Date().toString()); },
   clear() { termBody.innerHTML = ''; },
   exit() { termPrint('Goodbye.', 'term-purple'); setTimeout(closeTerminal, 400); },
   nyan() {
-    termPrint(`Launching nyan.exe for maximum rainbow happiness...`, 'term-success');
-    termPrint(`NYAN NYAN NYAN`, 'term-success');
+    termPrint(`Starting Nyan flyby...`, 'term-success');
+    termPrint(`Nyan mode active.`, 'term-success');
     const terminalState = captureTerminalState();
     activateNyanMode(terminalState);
     closeTerminal();
   },
-  sudo() { termPrint('Nice try. You are not in the sudoers file. This incident will be reported.', 'term-error'); },
-  cd() { termPrint('There is no place like ~', 'term-accent'); },
+  sudo() { termPrint('sudo: permission denied.', 'term-error'); },
+  cd() { termPrint('No directories available.', 'term-accent'); },
   git() { termPrint('fatal: not a git repository (or any parent up to mount point /)'); },
   rm() { termPrint('rm: cannot remove ' / ': Permission denied', 'term-error'); }
 };
 // ===== BRAINROT VIEWER =====
 const BRAINROT_VIDEOS = [
   { id: 'cKMlkOCii1E', label: 'Subway Surfers – Star Trail' },
-  { id: 'HVLApWoJufI', label: 'Geometry Dash MLG' },
   { id: 'x-Q_0EoZW_I', label: 'DIY Slime Compilation' },
   { id: 'uSDaTF1HJ3A', label: 'Minecraft X-Run Parkour' },
   { id: 'Y7ixXVcPBHM', label: 'Temple Run 2 – Real Life' },
   { id: '7ghSziUQnhs', label: 'Subway Surfers 4K' },
   { id: 'tfK_nYOB6D8', label: 'Geometry Dash – Hexagon Force' },
-  { id: 'eZHI7JjOclw', label: 'Watermelon Cutting ASMR' },
   { id: 'lNiXekn5hAI', label: 'Minecraft Lifesize Monopoly Parkour' },
   { id: 'fuQf-iGCmKA', label: 'Temple Run 2 4K' },
   { id: 'Q_HAKxCWztg', label: 'Subway Surfers #shorts' },
-  { id: 'Wp-TAIPC7GU', label: 'Geometry Dash – Cataclysm' },
   { id: 'HDkCwjd5xwM', label: 'Satisfying Craft Compilation' },
   { id: 'RSVqKKLtGUo', label: 'Minecraft Parkour – The Return' },
   { id: 'GD7tw7yXJmU', label: 'Photon Rush Gameplay' },
@@ -1863,7 +1860,7 @@ document.addEventListener('keydown', (e) => {
 });
 
 termCommands.brainrot = function () {
-  termPrint(`Opening reels... <span class="term-accent">← →</span> to navigate, <span class="term-accent">Esc</span> to close`);
+  termPrint(`Opening reels. Use <span class="term-accent">← →</span> to navigate, <span class="term-accent">Esc</span> to close.`);
   setTimeout(() => { closeTerminal(); openReels(); }, 400);
 };
 
@@ -1877,11 +1874,11 @@ const petCompanion = (() => {
   }
 
   const messages = [
-    'meow.exe loaded',
-    'certified bug hunter',
-    'currently vibing',
-    'tiny chaos assistant',
-    'paws on production'
+    'assistant online',
+    'watching for bugs',
+    'keeping an eye on UI',
+    'staying in sync',
+    'ready when you are'
   ];
 
   const companions = [];
@@ -1977,9 +1974,9 @@ const petCompanion = (() => {
 
   function toggleSwarm(customMessage) {
     if (isSwarmMode()) {
-      reveal(customMessage || 'swarm disabled: back to solo nyan', 1);
+      reveal(customMessage || 'swarm disabled: solo mode', 1);
     } else {
-      reveal(customMessage || 'secret unlocked: nyan swarm online', SWARM_COUNT);
+      reveal(customMessage || 'swarm enabled', SWARM_COUNT);
     }
   }
 
@@ -2004,14 +2001,14 @@ const petCompanion = (() => {
   petRoot.remove();
   setCompanionCount(1);
   document.addEventListener('pointermove', onPointerMove);
-  reveal('nyan companion online');
+  reveal('companion online');
 
   return { reveal, toggleSwarm };
 })();
 
 termCommands.pet = function () {
-  petCompanion.toggleSwarm('terminal override: toggled nyan swarm');
-  termPrint('Toggled nyan mode: solo <-> 6-cat swarm.', 'term-success');
+  petCompanion.toggleSwarm('terminal override: toggled swarm');
+  termPrint('Toggled companion mode: solo <-> swarm.', 'term-success');
 };
 
 termInput.addEventListener('keydown', (e) => {
