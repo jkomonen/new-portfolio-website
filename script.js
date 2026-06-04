@@ -1944,7 +1944,9 @@ const petCompanion = (() => {
   function onPointerMove(event) {
     if (!active) return;
 
-    const offsetX = event.clientX < window.innerWidth / 2 ? 48 : -120;
+    const width = Math.max(1, window.innerWidth);
+    const t = Math.min(1, Math.max(0, event.clientX / width));
+    const offsetX = 48 - 168 * t;
     targetX = Math.min(window.innerWidth - 96, Math.max(16, event.clientX + offsetX));
     targetY = Math.min(window.innerHeight - 96, Math.max(16, event.clientY + 18));
   }
@@ -2247,30 +2249,44 @@ document.addEventListener('mouseup', () => {
 // ===== BACKGROUND MUSIC =====
 const bgMusic = document.getElementById('bg-music');
 const musicToggle = document.getElementById('music-toggle');
-let musicStarted = false;
+let musicEnabled = false;
 
-function startMusic() {
-  if (!musicStarted) {
-    bgMusic.volume = 0.4;
-    bgMusic.play().then(() => {
-      musicStarted = true;
-    }).catch(() => { });
-  }
+bgMusic.muted = true;
+bgMusic.pause();
+
+function setMusicToggleState(enabled) {
+  musicEnabled = enabled;
+  musicToggle.classList.toggle('muted', !enabled);
+  musicToggle.textContent = enabled ? '🔊' : '🔇';
+  musicToggle.title = enabled ? 'Turn music off' : 'Turn music on';
 }
 
-startMusic();
+setMusicToggleState(false);
 
-// Retry on first user interaction if autoplay is blocked by the browser
-document.addEventListener('click', startMusic, { once: true });
-document.addEventListener('keydown', startMusic, { once: true });
+function turnMusicOn() {
+  bgMusic.currentTime = 0;
+  bgMusic.muted = false;
+  bgMusic.volume = 0.4;
+  setMusicToggleState(true);
+  bgMusic.play().then(() => {
+  }).catch(() => {
+    turnMusicOff();
+  });
+}
+
+function turnMusicOff() {
+  bgMusic.muted = true;
+  bgMusic.pause();
+  setMusicToggleState(false);
+}
 
 musicToggle.addEventListener('click', (e) => {
   e.stopPropagation();
-  startMusic();
-  bgMusic.muted = !bgMusic.muted;
-  musicToggle.classList.toggle('muted', bgMusic.muted);
-  musicToggle.textContent = bgMusic.muted ? '🔇' : '🔊';
-  musicToggle.title = bgMusic.muted ? 'Unmute music' : 'Mute music';
+  if (musicEnabled) {
+    turnMusicOff();
+  } else {
+    turnMusicOn();
+  }
 });
 
 // ===== THE ETERNAL F =====
