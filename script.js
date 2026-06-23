@@ -154,7 +154,7 @@ document.addEventListener('mousemove', (e) => {
 const heroSection = document.querySelector('.hero');
 if (heroSection) {
   heroSection.addEventListener('click', (e) => {
-    const target = e.target.closest('.hero-cta a, .hero-cta .btn, .hero-socials a');
+    const target = e.target.closest('.hero-socials a');
     if (target) {
       createLightning(e.clientX, e.clientY);
     }
@@ -165,7 +165,7 @@ if (heroSection) {
 // Exclude hero buttons to prevent cursor flickering
 document.querySelectorAll('.btn').forEach(btn => {
   // Skip buttons in hero section
-  if (btn.closest('.hero-cta') || btn.closest('.hero-socials') || btn.closest('.hero-secrets-card')) {
+  if (btn.closest('.hero-socials') || btn.id === 'hero-secrets-trigger') {
     return; // Already handled above
   }
 
@@ -1694,7 +1694,7 @@ function highlightRandomProjectCard(card) {
 
 const termCommands = {
   help() {
-    termPrint(`Available commands:\n  <span class="term-accent">whoami</span>    - Quick intro\n  <span class="term-accent">random</span>    - Random project or fact\n  <span class="term-accent">date</span>      - Current date/time\n  <span class="term-accent">clear</span>     - Clear terminal\n  <span class="term-accent">exit</span>      - Close terminal\n  <span class="term-rainbow">secrets</span>   - Hidden interactions`, 'term-pre');
+    termPrint(`Available commands:\n  <span class="term-accent">nyan</span>      - Nyan flyby\n  <span class="term-accent">whoami</span>    - Quick intro\n  <span class="term-accent">random</span>    - Random project or fact\n  <span class="term-accent">date</span>      - Current date/time\n  <span class="term-accent">clear</span>     - Clear terminal\n  <span class="term-accent">matrix</span>    - Toggle matrix rain\n  <span class="term-accent">exit</span>      - Close terminal\n  <span class="term-rainbow">secrets</span>   - Hidden interactions`, 'term-pre');
   },
   whoami() {
     termPrint(`Joshua Komonen: software engineer focused on practical, well-designed web products.`);
@@ -1726,7 +1726,7 @@ const termCommands = {
     }
   },
   secrets() {
-    termPrint(`  - Click and hold outside the terminal to open a black hole\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw neon ink\n  - Run <span class="term-accent">hack</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page\n  - Double-click anywhere for a glitch burst\n  - Close the terminal, then hold <span class="term-accent">F</span> for 3 seconds\n  - Run <span class="term-accent">brainrot</span> in this terminal\n  - Run <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
+    termPrint(`  - Type <span class="term-accent">nyan</span> in this terminal\n  - Click and hold outside the terminal to open a black hole\n  - Hold <span class="term-accent">Shift</span> and move the mouse to draw neon ink\n  - Run <span class="term-accent">hack</span> in this terminal\n  - Enter the <span class="term-accent">Konami Code</span> anywhere on the page\n  - Type <span class="term-accent">matrix</span> in this terminal\n  - Double-click anywhere for a glitch burst\n  - Close the terminal, then hold <span class="term-accent">F</span> for 3 seconds\n  - Run <span class="term-accent">brainrot</span> in this terminal\n  - Run <span class="term-accent">pet</span> in this terminal\n  - Leave the page idle for 30 seconds`, 'term-pre');
   },
   hack() {
     termPrint('Starting sequence...', 'term-purple');
@@ -2048,20 +2048,6 @@ if (heroSecretsTrigger) {
   heroSecretsTrigger.addEventListener('click', () => {
     openTerminal();
     revealSecretsInTerminal();
-  });
-}
-
-const heroRunMatrix = document.getElementById('hero-run-matrix');
-if (heroRunMatrix) {
-  heroRunMatrix.addEventListener('click', () => {
-    setTimedMatrixRun(3000);
-  });
-}
-
-const heroRunNyan = document.getElementById('hero-run-nyan');
-if (heroRunNyan) {
-  heroRunNyan.addEventListener('click', () => {
-    termCommands.nyan();
   });
 }
 

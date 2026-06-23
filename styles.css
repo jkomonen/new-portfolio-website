@@ -96,21 +96,6 @@ body.blackhole-active ::selection {
     }
 
     /* Disable animations/transforms on hero elements to prevent cursor flicker */
-    .hero-cta .btn-primary,
-    .hero-cta .btn-primary:hover,
-    .hero-secrets-pill,
-    .hero-secrets-pill:hover,
-    .hero-secrets-action,
-    .hero-secrets-action:hover {
-        animation: none !important;
-        transform: none !important;
-        transition: background 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease, color 0.2s ease !important;
-    }
-
-    .hero-cta .btn-primary,
-    .hero-cta .btn-primary:hover {
-        box-shadow: 0 4px 20px rgba(20, 184, 166, 0.3) !important;
-    }
 
     .hero-socials a,
     .hero-socials a:hover {
@@ -263,7 +248,6 @@ h1, h2, h3, h4, h5, h6 {
     font-weight: 500;
     text-decoration: none;
     border-radius: 8px;
-    transition: all var(--transition-normal);
     border: none;
     font-family: inherit;
 }
@@ -858,89 +842,35 @@ body.blackhole-cooldown .hero-name:hover {
     min-height: 1.5em;
 }
 
-.hero-description {
-    font-size: 1.1rem;
-    color: var(--text-secondary);
-    max-width: 600px;
-    margin: 0 auto 2rem;
-    line-height: 1.8;
-}
-
-.hero-cta {
-    display: flex;
-    gap: 1rem;
-    justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 3rem;
-}
-
-.hero-secrets-card {
-    width: min(100%, 620px);
-    margin: 0 auto 2.25rem;
-    padding: 1rem 1.1rem 1.15rem;
-    border: 1px solid rgba(20, 184, 166, 0.32);
-    border-radius: 16px;
-    background:
-        linear-gradient(135deg, rgba(7, 16, 16, 0.72), rgba(10, 28, 28, 0.86)),
-        radial-gradient(circle at top right, rgba(20, 184, 166, 0.18), transparent 52%);
-    box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(255, 255, 255, 0.04) inset;
-    backdrop-filter: blur(16px);
-}
-
-.hero-secrets-eyebrow {
-    margin: 0 0 0.55rem;
-    color: var(--accent-primary);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    letter-spacing: 0.14em;
-    text-transform: uppercase;
-}
-
-.hero-secrets-copy {
-    margin: 0;
-    color: var(--text-secondary);
-    line-height: 1.7;
-}
-
-.hero-secrets-tags {
-    display: flex;
-    justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    margin: 1rem 0 1.05rem;
-}
-
-.hero-secrets-pill {
+.hero-secrets-action {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    padding: 0.45rem 0.8rem;
-    border: 1px solid rgba(20, 184, 166, 0.22);
-    border-radius: 999px;
-    background: rgba(20, 184, 166, 0.1);
-    color: var(--text-primary);
-    font-family: var(--font-mono);
-    font-size: 0.78rem;
-    cursor: pointer;
-    transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.hero-secrets-pill:hover {
-    background: rgba(20, 184, 166, 0.16);
-    border-color: rgba(20, 184, 166, 0.42);
-    transform: translateY(-1px);
-}
-
-.hero-secrets-pill:focus-visible {
-    outline: none;
-    border-color: rgba(20, 184, 166, 0.7);
-    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
-}
-
-.hero-secrets-action {
-    justify-content: center;
     text-align: center;
-    min-width: 190px;
+    gap: 0;
+    padding: 1.15rem 2.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 10px;
+    color: #0d1515;
+    background: linear-gradient(135deg, #0d9488, #14b8a6 35%, #22d3ee);
+    box-shadow: 0 6px 30px rgba(20, 184, 166, 0.25), 0 0 50px rgba(20, 184, 166, 0.08);
+    margin-bottom: 2.5rem;
+    cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 64 64'%3E%3Crect x='8' y='12' width='48' height='40' rx='4' fill='%230d1515' stroke='%2314b8a6' stroke-width='2'/%3E%3Ctext x='20' y='38' font-family='monospace' font-size='18' font-weight='bold' fill='%2314b8a6'%3E%7B%7D%3C/text%3E%3Ccircle cx='16' cy='20' r='2' fill='%23ef4444'/%3E%3Ccircle cx='24' cy='20' r='2' fill='%23eab308'/%3E%3Ccircle cx='32' cy='20' r='2' fill='%2322c55e'/%3E%3Cline x1='40' y1='28' x2='52' y2='28' stroke='%2306b6d4' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='40' y1='34' x2='48' y2='34' stroke='%23a855f7' stroke-width='2' stroke-linecap='round'/%3E%3Cline x1='40' y1='40' x2='54' y2='40' stroke='%2314b8a6' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") 16 16, pointer;
+}
+
+.hero-secrets-action:hover {
+    box-shadow: 0 12px 50px rgba(20, 184, 166, 0.55), 0 0 80px rgba(20, 184, 166, 0.2);
+}
+
+.hero-secrets-action:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.4);
+}
+
+.hero-secrets-action > span {
+    pointer-events: none;
 }
 
 .hero-socials {
@@ -1714,20 +1644,6 @@ body.blackhole-cooldown .hero-name:hover {
 
     .nav-toggle.active span:nth-child(3) {
         transform: rotate(-45deg) translate(5px, -5px);
-    }
-
-    .hero-cta {
-        flex-direction: column;
-        align-items: center;
-    }
-
-    .hero-secrets-card {
-        padding: 1rem;
-        margin-bottom: 2rem;
-    }
-
-    .hero-secrets-tags {
-        gap: 0.55rem;
     }
 
     .hero-secrets-action {
